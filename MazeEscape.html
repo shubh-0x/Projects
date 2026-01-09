@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maze Escape</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #111827; /* Gray 900 */
+            color: white;
+            overflow: hidden; /* Prevent scroll on mobile */
+            touch-action: none; /* Prevent zoom/scroll gestures */
+        }
+
+        .retro-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Custom scrollbar for non-game elements if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        #gameCanvas {
+            image-rendering: pixelated; /* Sharp edges for retro feel */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Controller Styles */
+        #dpad-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust for width */
+            width: 140px;
+            height: 140px;
+            z-index: 50;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #dpad-container:active {
+            opacity: 1;
+        }
+
+        .dpad-btn {
+            cursor: pointer;
+            fill: transparent; 
+            transition: fill 0.1s;
+        }
+        
+        .dpad-btn:active {
+            fill: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Larger screens */
+        @media (min-width: 768px) {
+            #dpad-container {
+                width: 160px;
+                height: 160px;
+                bottom: 40px;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center h-screen w-screen select-none bg-gray-900">
+
+    <!-- Game Container -->
+    <div class="relative w-full h-full flex flex-col items-center justify-center">
+        
+        <!-- Header / HUD -->
+        <div id="hud" class="hidden absolute top-0 w-full max-w-4xl p-4 grid grid-cols-3 items-center z-10 text-yellow-400 shadow-md bg-gray-900/80 border-b border-gray-800">
+            <!-- Left: Level + Home -->
+            <div class="flex items-center gap-4 justify-start">
+                <button id="homeBtn" class="flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white p-2 rounded border border-gray-600 transition-colors" title="Back to Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </button>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-400 leading-none">LEVEL</span>
+                    <span id="levelDisplay" class="retro-font text-xl">1</span>
+                </div>
+            </div>
+
+            <!-- Center: Credits -->
+            <div class="flex justify-center">
+                <span class="text-[10px] md:text-xs text-gray-500 font-bold tracking-widest whitespace-nowrap">CREATED BY ❤ SHUBHANSHU</span>
+            </div>
+
+            <!-- Right: Time -->
+            <div class="flex flex-col items-end justify-end">
+                <span class="text-[10px] text-gray-400 leading-none">TIME</span>
+                <span id="timeDisplay" class="retro-font text-xl text-green-400">00:00</span>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <canvas id="gameCanvas" class="rounded-lg bg-gray-800"></canvas>
+
+        <!-- D-Pad Controller (Hidden on start, shown in game) -->
+        <div id="dpad-container" class="hidden">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer Circle Ring -->
+                <circle cx="50" cy="50" r="48" fill="rgba(30, 41, 59, 0.9)" stroke="#4b5563" stroke-width="4" />
+                
+                <!-- Inner Cross Shape Background -->
+                <path d="M35 15 H65 A5 5 0 0 1 70 20 V35 H85 A5 5 0 0 1 90 40 V60 A5 5 0 0 1 85 65 H70 V80 A5 5 0 0 1 65 85 H35 A5 5 0 0 1 30 80 V65 H15 A5 5 0 0 1 10 60 V40 A5 5 0 0 1 15 35 H30 V20 A5 5 0 0 1 35 15 Z" 
+                      fill="#374151" stroke="#4b5563" stroke-width="3" />
+
+                <!-- Directional Arrows (Triangles) -->
+                <!-- Up -->
+                <path d="M50 20 L60 32 H40 Z" fill="#9ca3af" />
+                <!-- Right -->
+                <path d="M80 50 L68 60 V40 Z" fill="#9ca3af" />
+                <!-- Down -->
+                <path d="M50 80 L40 68 H60 Z" fill="#9ca3af" />
+                <!-- Left -->
+                <path d="M20 50 L32 40 V60 Z" fill="#9ca3af" />
+
+                <!-- Hit Areas (Invisible buttons for interaction) -->
+                <!-- Up Area -->
+                <path class="dpad-btn" id="btn-up" d="M35 15 H65 V50 H35 Z" />
+                <!-- Right Area -->
+                <path class="dpad-btn" id="btn-right" d="M50 35 H85 V65 H50 Z" />
+                <!-- Down Area -->
+                <path class="dpad-btn" id="btn-down" d="M35 50 H65 V85 H35 Z" />
+                <!-- Left Area -->
+                <path class="dpad-btn" id="btn-left" d="M15 35 H50 V65 H15 Z" />
+                
+                <!-- Center decoration -->
+                <circle cx="50" cy="50" r="5" fill="#1f2937" />
+            </svg>
+        </div>
+
+        <!-- Menus -->
+        
+        <!-- Start Screen -->
+        <div id="startScreen" class="modal-overlay absolute inset-0 flex flex-col items-center justify-center z-20">
+            <h1 class="retro-font text-4xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-8 text-center px-4 leading-tight">
+                MAZE<br>ESCAPE
+            </h1>
+            <p class="text-gray-300 mb-8 max-w-md text-center px-4">
+                Navigate 100 levels of procedural mazes. Avoid enemies, beat the clock, reach the exit.
+            </p>
+            <div class="flex flex-col gap-4 w-64">
+                <button id="startBtn" class="retro-font bg-blue-600 hover:bg-blue-500 text-white py-4 rounded shadow-[0_4px_0_rgb(30,58,138)] active:shadow-[0_0px_0_rgb(30,58,138)] active:translate-y-1 transition-all duration-75 text-lg text-center">
+                    START GAME
+                </button>
+                <button id="continueBtn" class="hidden retro-font bg-green-600 hover:bg-green-500 text-white py-3 rounded shadow-[0_4px_0_rgb(20,83,45)] active:translate-y-1 transition-all text-xs text-center">
+                    CONTINUE LEVEL <span id="savedLevelNum"></span>
+                </button>
+            </div>
+            <!-- Credits on start screen as well -->
+            <p class="absolute bottom-4 text-xs text-gray-500 font-bold tracking-widest">CREATED BY ❤ SHUBHANSHU</p>
+        </div>
+
+        <!-- Game Over / Level Complete Screen -->
+        <div id="messageScreen" class="hidden modal-overlay absolute inset-0 flex flex-col items-center justify-center z-30">
+            <h2 id="messageTitle" class="retro-font text-3xl md:text-5xl mb-4 text-center text-red-500">GAME OVER</h2>
+            <p id="messageSub" class="text-gray-300 mb-12 text-center px-4 text-xl"></p>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-4 w-full max-w-xs px-4">
+                <button id="actionBtn" class="w-full retro-font bg-white text-black hover:bg-gray-200 py-4 rounded shadow-lg text-lg font-bold transform transition hover:scale-105">
+                    TRY AGAIN
+                </button>
+                <button id="homeActionBtn" class="w-full retro-font bg-gray-700 text-white hover:bg-gray-600 py-3 rounded shadow-lg text-sm">
+                    MENU
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/**
+ * MAZE ESCAPE
+ * A procedural maze generator and game engine.
+ */
+
+// --- Configuration ---
+const COLORS = {
+    wall: '#1f2937',      // gray-800
+    floor: '#111827',     // gray-900
+    player: '#3b82f6',    // blue-500
+    exit: '#10b981',      // emerald-500
+    enemy: '#ef4444',     // red-500
+    pathTrace: '#1e3a8a'  // dark blue trace
+};
+
+// --- Game State ---
+const state = {
+    level: 1,
+    maxLevels: 100,
+    isPlaying: false,
+    grid: [], // 2D array: 1 = wall, 0 = path
+    cols: 0,
+    rows: 0,
+    cellSize: 0,
+    player: { x: 1, y: 1 },
+    exit: { x: 0, y: 0 },
+    enemies: [],
+    timeLeft: 0,
+    animationFrame: null,
+    lastTime: 0,
+    input: { x: 0, y: 0 }, // Input buffer
+    touch: { startX: 0, startY: 0 }
+};
+
+// --- DOM Elements ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const ui = {
+    start: document.getElementById('startScreen'),
+    startBtn: document.getElementById('startBtn'),
+    continueBtn: document.getElementById('continueBtn'),
+    savedLevelNum: document.getElementById('savedLevelNum'),
+    hud: document.getElementById('hud'),
+    level: document.getElementById('levelDisplay'),
+    time: document.getElementById('timeDisplay'),
+    msgScreen: document.getElementById('messageScreen'),
+    msgTitle: document.getElementById('messageTitle'),
+    msgSub: document.getElementById('messageSub'),
+    actionBtn: document.getElementById('actionBtn'),
+    homeActionBtn: document.getElementById('homeActionBtn'),
+    homeBtn: document.getElementById('homeBtn'),
+    dpad: document.getElementById('dpad-container')
+};
+
+// --- Audio System ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'move') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'win') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+    } else if (type === 'lose') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+}
+
+// --- Maze Generation (Recursive Backtracker) ---
+function generateMaze(level) {
+    // Level 1: 7x7 internal
+    // Level 100: 51x51 internal
+    let dimension = Math.floor(7 + (level * 0.45));
+    if (dimension % 2 === 0) dimension++; 
+    
+    state.cols = dimension * 2 + 1;
+    state.rows = dimension * 2 + 1;
+
+    state.grid = [];
+    for (let y = 0; y < state.rows; y++) {
+        let row = [];
+        for (let x = 0; x < state.cols; x++) {
+            row.push(1);
+        }
+        state.grid.push(row);
+    }
+
+    const stack = [{x: 1, y: 1}];
+    state.grid[1][1] = 0;
+
+    const dirs = [
+        {x: 0, y: -2}, {x: 2, y: 0}, {x: 0, y: 2}, {x: -2, y: 0}
+    ];
+
+    while (stack.length > 0) {
+        const current = stack[stack.length - 1];
+        const neighbors = [];
+        for (let d of dirs) {
+            const nx = current.x + d.x;
+            const ny = current.y + d.y;
+            if (nx > 0 && nx < state.cols - 1 && ny > 0 && ny < state.rows - 1) {
+                if (state.grid[ny][nx] === 1) {
+                    neighbors.push({x: nx, y: ny, dx: d.x/2, dy: d.y/2});
+                }
+            }
+        }
+
+        if (neighbors.length > 0) {
+            const chosen = neighbors[Math.floor(Math.random() * neighbors.length)];
+            state.grid[current.y + chosen.dy][current.x + chosen.dx] = 0;
+            state.grid[chosen.y][chosen.x] = 0;
+            stack.push({x: chosen.x, y: chosen.y});
+        } else {
+            stack.pop();
+        }
+    }
+
+    state.player = { x: 1, y: 1 };
+    state.exit = { x: state.cols - 2, y: state.rows - 2 };
+    state.grid[state.exit.y][state.exit.x] = 0;
+
+    // Generate Enemies
+    state.enemies = [];
+    const enemyCount = Math.floor(level / 5); 
+    
+    for (let i = 0; i < enemyCount; i++) {
+        let ex, ey;
+        do {
+            ex = Math.floor(Math.random() * state.cols);
+            ey = Math.floor(Math.random() * state.rows);
+        } while (
+            state.grid[ey][ex] === 1 || 
+            (Math.abs(ex - state.player.x) < 5 && Math.abs(ey - state.player.y) < 5) ||
+            (ex === state.exit.x && ey === state.exit.y)
+        );
+        
+        state.enemies.push({
+            x: ex,
+            y: ey,
+            dirX: Math.random() > 0.5 ? 1 : -1,
+            dirY: Math.random() > 0.5 ? 1 : -1,
+            speedTick: 0,
+            speedThreshold: Math.max(5, 20 - Math.floor(level / 10))
+        });
+    }
+
+    // Time Logic
+    const tiles = (state.cols * state.rows) / 4;
+    const difficultyModifier = Math.max(0.5, 1.5 - (level * 0.01));
+    state.timeLeft = Math.floor(tiles * 0.5 * difficultyModifier) + 10;
+}
+
+// --- Game Loop & Logic ---
+
+function resizeCanvas() {
+    // Adjust canvas size to leave room for the controller
+    const maxWidth = window.innerWidth - 20;
+    // Reduce max height more to accommodate the centered controller at bottom
+    const maxHeight = window.innerHeight - 180; 
+    
+    const gridAspect = state.cols / state.rows;
+    const windowAspect = maxWidth / maxHeight;
+
+    let w, h;
+
+    if (windowAspect < gridAspect) {
+        w = maxWidth;
+        h = maxWidth / gridAspect;
+    } else {
+        h = maxHeight;
+        w = maxHeight * gridAspect;
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+    state.cellSize = w / state.cols;
+}
+
+function draw() {
+    ctx.fillStyle = COLORS.wall;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const cs = state.cellSize;
+
+    // Paths
+    ctx.fillStyle = COLORS.floor;
+    for (let y = 0; y < state.rows; y++) {
+        for (let x = 0; x < state.cols; x++) {
+            if (state.grid[y][x] === 0) {
+                // Draw slightly larger rects to avoid gaps
+                ctx.fillRect(Math.floor(x * cs), Math.floor(y * cs), Math.ceil(cs), Math.ceil(cs));
+            }
+        }
+    }
+
+    // Exit
+    ctx.fillStyle = COLORS.exit;
+    ctx.fillRect(state.exit.x * cs + cs*0.1, state.exit.y * cs + cs*0.1, cs*0.8, cs*0.8);
+
+    // Player
+    ctx.fillStyle = COLORS.player;
+    ctx.beginPath();
+    ctx.arc((state.player.x * cs) + (cs / 2), (state.player.y * cs) + (cs / 2), cs * 0.35, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Enemies
+    ctx.fillStyle = COLORS.enemy;
+    state.enemies.forEach(en => {
+        ctx.beginPath();
+        ctx.moveTo((en.x * cs) + (cs/2), (en.y * cs) + (cs * 0.2));
+        ctx.lineTo((en.x * cs) + (cs * 0.8), (en.y * cs) + (cs * 0.8));
+        ctx.lineTo((en.x * cs) + (cs * 0.2), (en.y * cs) + (cs * 0.8));
+        ctx.fill();
+    });
+}
+
+function movePlayer(dx, dy) {
+    if (!state.isPlaying) return;
+
+    const newX = state.player.x + dx;
+    const newY = state.player.y + dy;
+
+    if (state.grid[newY][newX] === 0) {
+        state.player.x = newX;
+        state.player.y = newY;
+        playSound('move');
+        checkWin();
+    }
+}
+
+function updateEnemies() {
+    state.enemies.forEach(en => {
+        en.speedTick++;
+        if (en.speedTick >= en.speedThreshold) {
+            en.speedTick = 0;
+            let moves = [{x: 0, y: -1}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 1, y: 0}];
+            let possible = moves.filter(m => state.grid[en.y + m.y][en.x + m.x] === 0);
+            
+            if (possible.length > 0) {
+                let move = possible[Math.floor(Math.random() * possible.length)];
+                en.x += move.x;
+                en.y += move.y;
+            }
+        }
+        if (en.x === state.player.x && en.y === state.player.y) {
+            gameOver("Caught by an enemy!");
+        }
+    });
+}
+
+function checkWin() {
+    if (state.player.x === state.exit.x && state.player.y === state.exit.y) {
+        levelComplete();
+    }
+}
+
+function levelComplete() {
+    state.isPlaying = false;
+    playSound('win');
+    
+    if (state.level >= state.maxLevels) {
+        showModal('VICTORY!', 'You escaped all 100 mazes!', false);
+        state.level = 1;
+        localStorage.setItem('mazeEscapeLevel', 1);
+    } else {
+        state.level++;
+        localStorage.setItem('mazeEscapeLevel', state.level);
+        showModal('LEVEL COMPLETE', `Completed!`, true);
+    }
+}
+
+function gameOver(reason) {
+    state.isPlaying = false;
+    playSound('lose');
+    showModal('GAME OVER', reason || 'Time ran out!', false);
+}
+
+function goHome() {
+    state.isPlaying = false;
+    
+    // Hide Game UI
+    ui.hud.classList.add('hidden');
+    ui.dpad.classList.add('hidden');
+    ui.msgScreen.classList.add('hidden');
+    
+    // Show Start Screen
+    ui.start.classList.remove('hidden');
+    
+    // Check for resume
+    const savedLevel = localStorage.getItem('mazeEscapeLevel');
+    if (savedLevel && parseInt(savedLevel) > 1) {
+        ui.continueBtn.classList.remove('hidden');
+        ui.savedLevelNum.innerText = savedLevel;
+    }
+}
+
+function showModal(title, sub, isNext) {
+    ui.msgTitle.innerText = title;
+    ui.msgTitle.className = isNext ? "retro-font text-3xl md:text-5xl mb-4 text-center text-green-400" : "retro-font text-3xl md:text-5xl mb-4 text-center text-red-500";
+    ui.msgSub.innerText = sub;
+    
+    // Handle button visibility
+    if (isNext) {
+        // Next level logic
+        ui.actionBtn.innerText = "NEXT LEVEL";
+        ui.actionBtn.onclick = () => {
+            ui.msgScreen.classList.add('hidden');
+            startLevel(state.level);
+        };
+        ui.homeActionBtn.classList.remove('hidden');
+    } else {
+        // Game over logic
+        ui.actionBtn.innerText = "RETRY LEVEL";
+        ui.actionBtn.onclick = () => {
+            ui.msgScreen.classList.add('hidden');
+            startLevel(state.level);
+        };
+        ui.homeActionBtn.classList.remove('hidden');
+    }
+    ui.msgScreen.classList.remove('hidden');
+}
+
+function gameLoop(timestamp) {
+    if (!state.isPlaying) return;
+
+    const deltaTime = timestamp - state.lastTime;
+    
+    if (deltaTime > 1000) {
+        state.timeLeft--;
+        state.lastTime = timestamp;
+        ui.time.innerText = formatTime(state.timeLeft);
+        
+        if (state.timeLeft < 10) ui.time.className = "retro-font text-xl text-red-500 animate-pulse";
+        else ui.time.className = "retro-font text-xl text-green-400";
+
+        if (state.timeLeft <= 0) {
+            gameOver("Out of time!");
+        }
+    }
+
+    updateEnemies();
+    draw();
+    state.animationFrame = requestAnimationFrame(gameLoop);
+}
+
+function startLevel(lvl) {
+    state.level = lvl;
+    ui.level.innerText = state.level;
+    
+    ui.start.classList.add('hidden');
+    ui.hud.classList.remove('hidden');
+    ui.dpad.classList.remove('hidden'); // Show controls
+    
+    generateMaze(state.level);
+    resizeCanvas();
+    
+    state.isPlaying = true;
+    state.lastTime = performance.now();
+    ui.time.innerText = formatTime(state.timeLeft);
+    
+    draw();
+    state.animationFrame = requestAnimationFrame(gameLoop);
+}
+
+function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec < 10 ? '0'+sec : sec}`;
+}
+
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// --- Input Handling ---
+
+function handleInput(e) {
+    if (!state.isPlaying) return;
+    switch(e.key) {
+        case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1); break;
+        case 'ArrowDown': case 's': case 'S': movePlayer(0, 1); break;
+        case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0); break;
+        case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0); break;
+    }
+}
+
+// Touch / Swipe
+canvas.addEventListener('touchstart', e => {
+    state.touch.startX = e.touches[0].clientX;
+    state.touch.startY = e.touches[0].clientY;
+    e.preventDefault();
+}, {passive: false});
+
+canvas.addEventListener('touchend', e => {
+    if (!state.isPlaying) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const diffX = endX - state.touch.startX;
+    const diffY = endY - state.touch.startY;
+    
+    // Minimal swipe distance
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > 30) movePlayer(diffX > 0 ? 1 : -1, 0);
+    } else {
+        if (Math.abs(diffY) > 30) movePlayer(0, diffY > 0 ? 1 : -1);
+    }
+    e.preventDefault();
+}, {passive: false});
+
+
+// D-Pad Listeners
+const setupBtn = (id, dx, dy) => {
+    const btn = document.getElementById(id);
+    
+    // Touch
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent mouse emulation
+        movePlayer(dx, dy);
+        btn.style.fill = "rgba(255,255,255,0.2)";
+    }, {passive: false});
+    
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        btn.style.fill = "transparent";
+    }, {passive: false});
+
+    // Mouse (for testing on desktop via click)
+    btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        movePlayer(dx, dy);
+    });
+};
+
+setupBtn('btn-up', 0, -1);
+setupBtn('btn-down', 0, 1);
+setupBtn('btn-left', -1, 0);
+setupBtn('btn-right', 1, 0);
+
+
+// --- Initialization ---
+
+window.addEventListener('keydown', handleInput);
+window.addEventListener('resize', () => {
+    if (state.isPlaying) {
+        resizeCanvas();
+        draw();
+    }
+});
+
+ui.startBtn.addEventListener('click', () => {
+    localStorage.removeItem('mazeEscapeLevel');
+    startLevel(1);
+});
+
+ui.continueBtn.addEventListener('click', () => {
+    const saved = parseInt(localStorage.getItem('mazeEscapeLevel'));
+    if (saved) startLevel(saved);
+});
+
+ui.homeBtn.addEventListener('click', goHome);
+ui.homeActionBtn.addEventListener('click', goHome);
+
+// Initial Check
+const savedLevel = localStorage.getItem('mazeEscapeLevel');
+if (savedLevel && parseInt(savedLevel) > 1) {
+    ui.continueBtn.classList.remove('hidden');
+    ui.savedLevelNum.innerText = savedLevel;
+}
+
+</script>
+</body>
+</html>
+
+
