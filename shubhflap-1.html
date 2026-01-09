@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shubh Flap - Extreme Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #70c5ce; /* Default Sky */
+            touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            transition: background-color 0.5s ease;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .interactive {
+            pointer-events: auto;
+        }
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-10px); }
+            50% { transform: translateY(10px); }
+        }
+        .animate-bounce-custom {
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes countdownPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .countdown-anim {
+            animation: countdownPop 0.8s ease-out;
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #10B981;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10B981;
+        }
+        
+        /* Range Slider Styling */
+        input[type=range] {
+            height: 26px;
+            -webkit-appearance: none;
+            margin: 10px 0;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            animate: 0.2s;
+            background: #e2e8f0;
+            border-radius: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .mode-btn.active {
+            box-shadow: 0 0 10px currentColor;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Asset Loader (Hidden) -->
+    <img id="playerSource" src="https://uploads.onecompiler.io/445ftccmg/446wuzsh2/unnamed__1_-removebg-preview.png" alt="Player" style="display:none;" onerror="this.src='https://placehold.co/100?text=Face'">
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        
+        <!-- TOP CONTROLS -->
+        <div id="topControls" class="interactive absolute top-4 left-4 z-50 flex flex-col space-y-3 transition-opacity duration-300">
+            <div class="flex space-x-3">
+                <!-- Camera Button -->
+                <button onclick="openUploadModal()" class="bg-white/20 hover:bg-white/40 backdrop-blur-md border-2 border-white/50 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform transform active:scale-90" title="Change Face">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+
+                <!-- Music Settings Button -->
+                <button onclick="openMusicModal()" class="bg-white/20 hover:bg-white/40 backdrop-blur-md border-2 border-white/50 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform transform active:scale-90" title="Music Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                </button>
+
+                <!-- Mute Button -->
+                <button onclick="toggleMute()" id="muteBtn" class="bg-white/20 hover:bg-white/40 backdrop-blur-md border-2 border-white/50 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform transform active:scale-90" title="Mute/Unmute">
+                    <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- NEW: Settings Button (Gear) -->
+            <button onclick="openSettingsModal()" class="bg-white/20 hover:bg-white/40 backdrop-blur-md border-2 border-white/50 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform transform active:scale-90" title="Game Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- DOWNLOAD APP MODAL (NEW POPUP) -->
+        <div id="downloadModal" class="interactive absolute inset-0 bg-black/80 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-6 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl animate-bounce-custom">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Download App!</h2>
+                <div class="w-32 h-32 mx-auto mb-4 relative bg-gray-100 rounded-xl overflow-hidden shadow-lg border-4 border-white">
+                     <img src="https://uploads.onecompiler.io/445ftccmg/447hmqcu4/unnamed%20(3).jpg" class="w-full h-full object-cover" alt="App Icon">
+                </div>
+                <p class="text-gray-600 mb-6 font-medium">Get the full Shubh Flap experience on your device!</p>
+                
+                <a href="https://safeshare-18.preview.emergentagent.com/bHuIAoKB" target="_blank" class="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-500/30 transition-transform transform active:scale-95 mb-3 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download APK
+                </a>
+                
+                <button onclick="closeDownloadModal()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- SETTINGS MODAL -->
+        <div id="settingsModal" class="interactive hidden absolute inset-0 bg-black/80 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Game Settings</h2>
+                    <span class="text-2xl">⚙️</span>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Timer Toggle -->
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">⏱️</span>
+                            <span class="font-semibold text-gray-700">Start Timer (3s)</span>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="toggleTimer" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-green-500 transition-all duration-300 ease-in-out" checked onchange="toggleSetting('timer')"/>
+                            <label for="toggleTimer" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                        </div>
+                    </div>
+
+                    <!-- Particles Toggle -->
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">✨</span>
+                            <span class="font-semibold text-gray-700">Face Particles</span>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 align-middle select-none">
+                            <input type="checkbox" name="toggle" id="toggleParticles" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-green-500 transition-all duration-300" checked onchange="toggleSetting('particles')"/>
+                            <label for="toggleParticles" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+
+                    <!-- Shake Toggle -->
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">🫨</span>
+                            <span class="font-semibold text-gray-700">Screen Shake</span>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 align-middle select-none">
+                            <input type="checkbox" name="toggle" id="toggleShake" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-green-500 transition-all duration-300" checked onchange="toggleSetting('shake')"/>
+                            <label for="toggleShake" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+
+                    <!-- Vibration Toggle -->
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">📳</span>
+                            <span class="font-semibold text-gray-700">Vibration</span>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 align-middle select-none">
+                            <input type="checkbox" name="toggle" id="toggleVibration" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-green-500 transition-all duration-300" checked onchange="toggleSetting('vibration')"/>
+                            <label for="toggleVibration" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="closeSettingsModal()" class="w-full mt-6 bg-sky-500 text-white py-3 rounded-xl font-bold hover:bg-sky-600 shadow-lg shadow-sky-500/30 transition-all transform active:scale-95">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- UPLOAD FACE MODAL -->
+        <div id="uploadModal" class="interactive hidden absolute inset-0 bg-black/80 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl transform transition-all scale-100">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Customize Face</h2>
+                <div class="w-32 h-32 mx-auto bg-gray-200 rounded-full overflow-hidden border-4 border-sky-400 mb-4 shadow-inner relative">
+                    <img id="previewFace" src="https://uploads.onecompiler.io/445ftccmg/446wuzsh2/unnamed__1_-removebg-preview.png" class="w-full h-full object-cover">
+                </div>
+                <p class="text-gray-500 text-sm mb-2">Upload a photo to use as your character!</p>
+                <input type="file" id="faceInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                <div class="flex flex-col space-y-2 mb-3">
+                    <button onclick="document.getElementById('faceInput').click()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-300 transition-colors flex items-center justify-center gap-2">
+                        📂 Choose Image
+                    </button>
+                    <button onclick="resetToDefaultFace()" class="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-semibold py-3 px-4 rounded-xl border border-yellow-200 transition-colors flex items-center justify-center gap-2">
+                        🔄 Reset Default
+                    </button>
+                </div>
+                <div class="flex space-x-3 mt-2">
+                    <button onclick="closeUploadModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-xl transition-colors">Cancel</button>
+                    <button onclick="saveNewFace()" class="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-sky-500/30 transition-colors">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MUSIC CUSTOMIZATION MODAL -->
+        <div id="musicModal" class="interactive hidden absolute inset-0 bg-black/80 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Background Music</h2>
+                    <span class="text-2xl">🎵</span>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Current Track</p>
+                    <div id="musicStatus" class="text-sky-600 font-semibold truncate text-lg">No Music Selected</div>
+                </div>
+                <div class="space-y-4 mb-6">
+                    <button onclick="document.getElementById('musicInput').click()" class="w-full bg-blue-50 text-blue-700 border-2 border-blue-100 py-3 rounded-xl font-bold hover:bg-blue-100 hover:border-blue-200 transition flex items-center justify-center gap-2 group">
+                        <span class="group-hover:scale-110 transition-transform">📂</span> Upload Audio File
+                    </button>
+                    <input type="file" id="musicInput" accept="audio/*" class="hidden" onchange="handleMusicUpload(event)">
+                    <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-gray-600 text-sm font-semibold">Volume</span>
+                            <span id="volumeValue" class="text-gray-400 text-sm">50%</span>
+                        </div>
+                        <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.5" class="w-full accent-sky-500" oninput="adjustVolume(this.value)">
+                    </div>
+                    <button onclick="removeMusic()" class="w-full bg-red-50 text-red-600 border border-red-100 py-2 rounded-xl font-bold hover:bg-red-100 transition text-sm flex items-center justify-center gap-1">
+                        Remove Music
+                    </button>
+                </div>
+                <button onclick="closeMusicModal()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-700 shadow-lg shadow-gray-500/20 transition-all transform active:scale-95">
+                    Done
+                </button>
+            </div>
+        </div>
+        
+        <!-- Score HUD -->
+        <div id="scoreHud" class="absolute top-10 text-white text-6xl font-bold drop-shadow-md hidden z-10">0</div>
+        
+        <!-- COUNTDOWN OVERLAY -->
+        <div id="countdownOverlay" class="absolute inset-0 flex items-center justify-center hidden z-40 pointer-events-none">
+            <div id="countdownText" class="text-9xl font-black text-white drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] countdown-anim">3</div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="interactive flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm absolute inset-0 text-center p-6 transition-colors duration-500">
+            <div class="w-48 h-48 rounded-full overflow-hidden shadow-2xl mb-4 animate-bounce-custom">
+                <img id="startScreenFace" src="https://uploads.onecompiler.io/445ftccmg/446wuzsh2/unnamed__1_-removebg-preview.png" class="w-full h-full object-cover" alt="Start Face" onerror="this.src='https://placehold.co/100?text=Face'">
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold text-white drop-shadow-lg mb-2 tracking-wider">SHUBH FLAP</h1>
+            
+            <div class="flex space-x-3 mb-6 bg-black/30 p-2 rounded-2xl backdrop-blur-md">
+                <button onclick="setMode('normal')" id="btn-normal" class="mode-btn active bg-sky-500 text-sky-100 border-2 border-sky-300 px-4 py-2 rounded-xl font-bold transition-all">Normal</button>
+                <button onclick="setMode('night')" id="btn-night" class="mode-btn bg-indigo-900 text-indigo-100 border-2 border-indigo-500 px-4 py-2 rounded-xl font-bold transition-all">Night</button>
+                <button onclick="setMode('fire')" id="btn-fire" class="mode-btn bg-red-700 text-red-100 border-2 border-orange-500 px-4 py-2 rounded-xl font-bold transition-all">🔥 Fire</button>
+            </div>
+            
+            <p class="text-white text-xl mb-6 opacity-90">Tap, Click, or Press Space to Fly</p>
+            <button id="startBtn" class="mb-32 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-2xl py-4 px-12 rounded-full shadow-[0_4px_0_rgb(180,83,9)] transform active:translate-y-1 active:shadow-none transition-all">
+                START GAME
+            </button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="interactive hidden flex-col items-center justify-center bg-black/60 backdrop-blur-md absolute inset-0 text-center p-6 z-50">
+            <h2 class="text-6xl font-black text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-2">GAME OVER</h2>
+            <div class="bg-yellow-100 border-4 border-yellow-500 rounded-xl p-6 w-full max-w-sm mb-8 shadow-2xl transform rotate-1">
+                <div class="flex justify-between items-end mb-2 border-b-2 border-yellow-200 pb-2">
+                    <span class="text-yellow-800 font-bold uppercase text-sm tracking-wider">Score</span>
+                    <span id="finalScore" class="text-4xl font-black text-yellow-900">0</span>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-yellow-700 font-bold uppercase text-sm tracking-wider">Best</span>
+                    <span id="bestScore" class="text-4xl font-black text-yellow-800">0</span>
+                </div>
+            </div>
+            <div class="flex flex-col space-y-4 mb-12">
+                <button id="restartBtn" class="bg-green-500 hover:bg-green-400 text-white font-bold text-2xl py-4 px-12 rounded-full shadow-[0_4px_0_rgb(21,128,61)] transform active:translate-y-1 active:shadow-none transition-all">
+                    TRY AGAIN
+                </button>
+                <button id="homeBtn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold text-xl py-3 px-8 rounded-full shadow-[0_4px_0_rgb(29,78,216)] transform active:translate-y-1 active:shadow-none transition-all">
+                    HOME
+                </button>
+            </div>
+            <div class="mt-4 text-white/60 text-sm font-bold tracking-widest animate-pulse">
+                CREATED BY <span class="text-red-500 mx-1">❤️</span> SHUBHANSHU
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Constants & Variables ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const scoreHud = document.getElementById('scoreHud');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const finalScoreEl = document.getElementById('finalScore');
+        const bestScoreEl = document.getElementById('bestScore');
+        const playerImgSource = document.getElementById('playerSource');
+        const startScreenFace = document.getElementById('startScreenFace');
+        const uploadModal = document.getElementById('uploadModal');
+        const previewFace = document.getElementById('previewFace');
+        const topControls = document.getElementById('topControls'); 
+        const iconSoundOn = document.getElementById('icon-sound-on');
+        const iconSoundOff = document.getElementById('icon-sound-off');
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const countdownText = document.getElementById('countdownText');
+        
+        // Settings Elements
+        const settingsModal = document.getElementById('settingsModal');
+        
+        // Download Modal Elements
+        const downloadModal = document.getElementById('downloadModal');
+
+        // NEW DEFAULT URL
+        const DEFAULT_FACE_URL = "https://uploads.onecompiler.io/445ftccmg/446wuzsh2/unnamed__1_-removebg-preview.png";
+        
+        // Music UI Elements
+        const musicModal = document.getElementById('musicModal');
+        const musicStatus = document.getElementById('musicStatus');
+        const volumeValue = document.getElementById('volumeValue');
+
+        // Mode Management
+        let gameMode = 'normal'; // 'normal', 'night', 'fire'
+        let isMuted = false;
+        
+        // Game Settings (Defaults)
+        let gameSettings = {
+            timer: true,
+            shake: true,
+            vibration: true,
+            particles: true
+        };
+        
+        // Game State
+        let frames = 0;
+        let score = 0;
+        let highScore = localStorage.getItem('faceFlapHighScore') || 0;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER, COUNTDOWN
+        let shakeDuration = 0;
+
+        // --- MUSIC LOGIC ---
+        let bgMusic = new Audio();
+        bgMusic.loop = true;
+        let hasCustomMusic = false;
+        let customMusicUrl = null;
+
+        // --- PARTICLE SYSTEM ---
+        let particles = [];
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4; // Random horiz spread
+                this.vy = (Math.random() - 0.5) * 4; // Random vert spread
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.02;
+                this.color = gameMode === 'fire' ? 
+                    `rgba(255, ${Math.floor(Math.random()*150)}, 0` : 
+                    `rgba(255, 255, 255`;
+            }
+            update() {
+                this.x += this.vx - 2; // Move left slightly to trail
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+            draw(ctx) {
+                ctx.fillStyle = `${this.color}, ${this.life})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3 * this.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // --- DOWNLOAD MODAL LOGIC ---
+        function closeDownloadModal() {
+            downloadModal.classList.add('hidden');
+        }
+
+        // --- SETTINGS LOGIC ---
+        function openSettingsModal() {
+            settingsModal.classList.remove('hidden');
+        }
+        function closeSettingsModal() {
+            settingsModal.classList.add('hidden');
+        }
+        function toggleSetting(key) {
+            gameSettings[key] = !gameSettings[key];
+        }
+
+        function openMusicModal() { musicModal.classList.remove('hidden'); }
+        function closeMusicModal() { musicModal.classList.add('hidden'); }
+
+        function handleMusicUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (customMusicUrl) URL.revokeObjectURL(customMusicUrl);
+                customMusicUrl = URL.createObjectURL(file);
+                bgMusic.src = customMusicUrl;
+                hasCustomMusic = true;
+                musicStatus.innerText = file.name;
+                musicStatus.classList.add("text-green-600");
+                musicStatus.classList.remove("text-sky-600");
+            }
+        }
+
+        function adjustVolume(value) {
+            bgMusic.volume = value;
+            volumeValue.innerText = Math.round(value * 100) + "%";
+        }
+
+        function removeMusic() {
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            bgMusic.src = "";
+            hasCustomMusic = false;
+            musicStatus.innerText = "No Music Selected";
+            musicStatus.classList.remove("text-green-600");
+            musicStatus.classList.add("text-sky-600");
+            document.getElementById('musicInput').value = ""; 
+        }
+
+        function startMusic() {
+            if (hasCustomMusic && !isMuted && bgMusic.paused) {
+                bgMusic.play().catch(e => console.log("Music play blocked:", e));
+            }
+        }
+
+        function stopMusic() {
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+        }
+
+        // --- SOUND LOGIC ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted; 
+            
+            if(isMuted) {
+                iconSoundOn.classList.add('hidden');
+                iconSoundOff.classList.remove('hidden');
+            } else {
+                iconSoundOn.classList.remove('hidden');
+                iconSoundOff.classList.add('hidden');
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (gameState === 'PLAYING' && hasCustomMusic) bgMusic.play().catch(e => console.log(e));
+            }
+        }
+        
+        const sounds = {
+            playTone: (freq, type, duration) => {
+                if(isMuted) return; 
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                } catch(e) { console.error(e); }
+            },
+            jump: () => {
+                if(isMuted) return; 
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    let startFreq = gameMode === 'fire' ? 200 : 300;
+                    let endFreq = gameMode === 'fire' ? 400 : 500;
+                    
+                    osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(endFreq, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } catch(e) { console.error(e); }
+            },
+            score: () => { sounds.playTone(1200, 'sine', 0.2); },
+            hit: () => { sounds.playTone(150, 'sawtooth', 0.3); }
+        };
+
+        // --- UPLOAD FACE LOGIC ---
+        function openUploadModal() {
+            uploadModal.classList.remove('hidden');
+            previewFace.src = playerImgSource.src;
+        }
+        function closeUploadModal() { uploadModal.classList.add('hidden'); }
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { previewFace.src = e.target.result; };
+                reader.readAsDataURL(file);
+            }
+        }
+        function resetToDefaultFace() { previewFace.src = DEFAULT_FACE_URL; }
+        function saveNewFace() {
+            playerImgSource.src = previewFace.src;
+            startScreenFace.src = previewFace.src;
+            closeUploadModal();
+        }
+
+        // --- PHYSICS SETTINGS ---
+        const gravity = 0.21; 
+        const jumpStrength = 4.3; 
+
+        const stars = [];
+        for(let i=0; i<50; i++) {
+            stars.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                size: Math.random() * 2 + 1,
+                alpha: Math.random()
+            });
+        }
+
+        window.setMode = function(mode) {
+            gameMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            if(mode === 'normal') document.body.style.backgroundColor = '#70c5ce';
+            if(mode === 'night') document.body.style.backgroundColor = '#0F172A';
+            if(mode === 'fire') document.body.style.backgroundColor = '#2a0a0a';
+            draw(); 
+        }
+
+        // --- Game Objects ---
+        const bird = {
+            x: 50,
+            y: 150,
+            visualRadius: 34, 
+            collisionRadius: 20, 
+            velocity: 0,
+            rotation: 0,
+            
+            draw: function() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                let targetRotation = 0;
+                if (this.velocity < 0) targetRotation = -0.4;
+                else if (this.velocity > 0) {
+                    targetRotation = this.velocity * 0.1;
+                    if(targetRotation > 1.5) targetRotation = 1.5; 
+                }
+                this.rotation = targetRotation;
+                ctx.rotate(this.rotation);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.visualRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip(); 
+
+                const d = this.visualRadius * 2;
+                ctx.drawImage(playerImgSource, -this.visualRadius, -this.visualRadius, d, d);
+                ctx.restore();
+            },
+            
+            update: function() {
+                this.velocity += gravity;
+                this.y += this.velocity;
+
+                // Spawn Particles
+                if (gameSettings.particles && frames % 3 === 0) {
+                    particles.push(new Particle(this.x, this.y));
+                }
+            },
+            
+            jump: function() {
+                this.velocity = -jumpStrength;
+                sounds.jump();
+            },
+            
+            reset: function() {
+                this.x = canvas.width * 0.3; 
+                this.y = canvas.height / 2;
+                this.velocity = 0;
+                this.rotation = 0;
+                particles = [];
+            }
+        };
+
+        const pipes = {
+            items: [],
+            w: 52,
+            gap: 165,
+            dx: 2.8,
+            
+            draw: function() {
+                for(let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    let bottomPipeY = p.top + this.gap;
+                    let bottomPipeHeight = canvas.height - bottomPipeY;
+
+                    if (gameMode === 'fire') {
+                        let gradTop = ctx.createLinearGradient(p.x, 0, p.x, p.top);
+                        gradTop.addColorStop(0, '#ffff00'); 
+                        gradTop.addColorStop(0.3, '#ff8800');
+                        gradTop.addColorStop(1, '#aa0000');
+                        ctx.fillStyle = gradTop;
+                        ctx.fillRect(p.x, 0, this.w, p.top);
+                        ctx.fillStyle = '#ffaa0055';
+                        ctx.fillRect(p.x + 10, 0, this.w - 20, p.top - 10);
+                        let gradBot = ctx.createLinearGradient(p.x, canvas.height, p.x, bottomPipeY);
+                        gradBot.addColorStop(0, '#ffff00');
+                        gradBot.addColorStop(0.3, '#ff8800');
+                        gradBot.addColorStop(1, '#aa0000');
+                        ctx.fillStyle = gradBot;
+                        ctx.fillRect(p.x, bottomPipeY, this.w, bottomPipeHeight);
+                        ctx.fillStyle = '#ffaa0055';
+                        ctx.fillRect(p.x + 10, bottomPipeY + 10, this.w - 20, bottomPipeHeight);
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = "orange";
+                        ctx.strokeStyle = "#ffcc00";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.top); ctx.lineTo(p.x + this.w, p.top);
+                        ctx.moveTo(p.x, bottomPipeY); ctx.lineTo(p.x + this.w, bottomPipeY);
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    } else if (gameMode === 'night') {
+                        ctx.fillStyle = '#2d4c1e';
+                        ctx.strokeStyle = '#1a2e10';
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(p.x, 0, this.w, p.top);
+                        ctx.strokeRect(p.x, 0, this.w, p.top);
+                        ctx.fillStyle = '#223815';
+                        ctx.fillRect(p.x - 2, p.top - 20, this.w + 4, 20);
+                        ctx.strokeRect(p.x - 2, p.top - 20, this.w + 4, 20);
+                        ctx.fillStyle = '#2d4c1e';
+                        ctx.fillRect(p.x, bottomPipeY, this.w, bottomPipeHeight);
+                        ctx.strokeRect(p.x, bottomPipeY, this.w, bottomPipeHeight);
+                        ctx.fillStyle = '#223815';
+                        ctx.fillRect(p.x - 2, bottomPipeY, this.w + 4, 20);
+                        ctx.strokeRect(p.x - 2, bottomPipeY, this.w + 4, 20);
+                    } else {
+                        ctx.fillStyle = '#73BF2E';
+                        ctx.strokeStyle = '#558C22';
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(p.x, 0, this.w, p.top);
+                        ctx.strokeRect(p.x, 0, this.w, p.top);
+                        ctx.fillStyle = '#73BF2E';
+                        ctx.fillRect(p.x - 2, p.top - 20, this.w + 4, 20);
+                        ctx.strokeRect(p.x - 2, p.top - 20, this.w + 4, 20);
+                        ctx.fillRect(p.x, bottomPipeY, this.w, bottomPipeHeight);
+                        ctx.strokeRect(p.x, bottomPipeY, this.w, bottomPipeHeight);
+                        ctx.fillRect(p.x - 2, bottomPipeY, this.w + 4, 20);
+                        ctx.strokeRect(p.x - 2, bottomPipeY, this.w + 4, 20);
+                    }
+                }
+            },
+            
+            update: function() {
+                const spawnRate = Math.max(80, Math.floor(canvas.width / (this.dx * 1.5))); 
+                if(frames % spawnRate === 0) {
+                    const minPipeHeight = 50;
+                    const maxTop = canvas.height - ground.h - this.gap - minPipeHeight;
+                    const topHeight = Math.floor(Math.random() * (maxTop - minPipeHeight + 1) + minPipeHeight);
+                    this.items.push({ x: canvas.width, top: topHeight, passed: false });
+                }
+
+                for(let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    p.x -= this.dx;
+
+                    if(bird.x + bird.collisionRadius > p.x && bird.x - bird.collisionRadius < p.x + this.w) {
+                        if((bird.y - bird.collisionRadius < p.top) || (bird.y + bird.collisionRadius > p.top + this.gap)) {
+                            sounds.hit();
+                            gameOver();
+                        }
+                    }
+
+                    if(p.x + this.w < bird.x && !p.passed) {
+                        score++;
+                        scoreHud.innerText = score;
+                        p.passed = true;
+                        sounds.score();
+                    }
+                    if(p.x + this.w < 0) {
+                        this.items.shift();
+                        i--;
+                    }
+                }
+            },
+            reset: function() { this.items = []; }
+        };
+
+        const ground = {
+            h: 100, 
+            x: 0,
+            draw: function() {
+                if(gameMode === 'fire') {
+                    ctx.fillStyle = '#1a0505'; 
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, this.h);
+                    ctx.fillStyle = '#ff4500'; 
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, 10);
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "red";
+                    ctx.strokeStyle = '#ff8800';
+                    ctx.beginPath();
+                    ctx.moveTo(0, canvas.height - this.h + 5);
+                    ctx.lineTo(canvas.width, canvas.height - this.h + 5);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                } else if (gameMode === 'night') {
+                    ctx.fillStyle = '#2f2f20';
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, this.h);
+                    ctx.fillStyle = '#1e3312'; 
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, 15);
+                } else {
+                    ctx.fillStyle = '#ded895';
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, this.h);
+                    ctx.fillStyle = '#73bf2e';
+                    ctx.fillRect(0, canvas.height - this.h, canvas.width, 15);
+                    ctx.strokeStyle = '#558c22';
+                    ctx.beginPath();
+                    ctx.moveTo(0, canvas.height - this.h + 15);
+                    ctx.lineTo(canvas.width, canvas.height - this.h + 15);
+                    ctx.stroke();
+                }
+            },
+            update: function() {}
+        };
+
+        const background = {
+            draw: function() {
+                if (gameMode === 'night') {
+                    ctx.fillStyle = "#ffffff";
+                    stars.forEach(s => {
+                         ctx.globalAlpha = Math.abs(Math.sin(Date.now() * 0.001 * s.size + s.x)); 
+                         ctx.beginPath(); 
+                         ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); 
+                         ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = "#feffd4";
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = "white";
+                    ctx.beginPath(); ctx.arc(canvas.width - 100, 100, 40, 0, Math.PI*2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else if (gameMode === 'fire') {
+                    ctx.fillStyle = "#00000080";
+                    ctx.beginPath(); ctx.arc(100, 100, 30, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(140, 100, 40, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(180, 100, 30, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(canvas.width - 100, 150, 40, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(canvas.width - 60, 160, 50, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = "#1a0000"; 
+                    const bottomY = canvas.height - ground.h;
+                    ctx.beginPath();
+                    ctx.moveTo(0, bottomY);
+                    ctx.lineTo(50, bottomY - 100);
+                    ctx.lineTo(100, bottomY - 20);
+                    ctx.lineTo(150, bottomY - 120);
+                    ctx.lineTo(250, bottomY - 40);
+                    ctx.lineTo(350, bottomY - 150);
+                    ctx.lineTo(canvas.width, bottomY);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = "#ffffff50";
+                    ctx.beginPath(); ctx.arc(100, 100, 30, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(140, 100, 40, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(180, 100, 30, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(canvas.width - 100, 150, 40, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(canvas.width - 60, 160, 50, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = "#a3d8e0"; 
+                    const bottomY = canvas.height - ground.h;
+                    ctx.fillRect(50, bottomY - 100, 50, 100);
+                    ctx.fillRect(120, bottomY - 60, 40, 60);
+                    ctx.fillRect(200, bottomY - 150, 60, 150);
+                    ctx.fillRect(canvas.width - 150, bottomY - 80, 70, 80);
+                }
+            }
+        };
+
+        // --- Core Functions ---
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars.length = 0;
+            for(let i=0; i<50; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    alpha: Math.random()
+                });
+            }
+            if(canvas.height < 600) {
+                pipes.gap = 145; 
+                ground.h = 60;
+            } else {
+                pipes.gap = 165; 
+                ground.h = 100;
+            }
+        }
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            draw();
+        }
+
+        function triggerCountdown(callback) {
+            let count = 3;
+            gameState = 'COUNTDOWN';
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            countdownOverlay.classList.remove('hidden');
+            countdownText.innerText = count;
+            
+            // Re-trigger animation
+            countdownText.classList.remove('countdown-anim');
+            void countdownText.offsetWidth; // trigger reflow
+            countdownText.classList.add('countdown-anim');
+
+            let timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownText.innerText = count;
+                    countdownText.classList.remove('countdown-anim');
+                    void countdownText.offsetWidth;
+                    countdownText.classList.add('countdown-anim');
+                } else {
+                    clearInterval(timer);
+                    countdownOverlay.classList.add('hidden');
+                    callback();
+                }
+            }, 1000);
+        }
+
+        function startGameActual() {
+            gameState = 'PLAYING';
+            scoreHud.classList.remove('hidden');
+            startMusic();
+            loop();
+        }
+
+        function resetGame() {
+            if (!isMuted && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            bird.reset();
+            pipes.reset();
+            score = 0;
+            scoreHud.innerText = score;
+            frames = 0;
+            shakeDuration = 0;
+            
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            uploadModal.classList.add('hidden'); 
+            musicModal.classList.add('hidden');
+            settingsModal.classList.add('hidden');
+            downloadModal.classList.add('hidden'); // Ensure popup is gone
+            topControls.classList.add('hidden');
+            
+            if (gameSettings.timer) {
+                triggerCountdown(startGameActual);
+            } else {
+                startGameActual();
+            }
+        }
+
+        function goHome() {
+            gameState = 'START';
+            stopMusic(); 
+            gameOverScreen.classList.add('hidden');
+            scoreHud.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            topControls.classList.remove('hidden');
+            bird.reset();
+            pipes.reset();
+            draw(); 
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            stopMusic(); 
+            
+            // SHAKE TRIGGER
+            if (gameSettings.shake) {
+                shakeDuration = 20; 
+            }
+
+            // VIBRATION TRIGGER
+            if (gameSettings.vibration && navigator.vibrate) {
+                navigator.vibrate(200); 
+            }
+
+            if(score > highScore) {
+                highScore = score;
+                localStorage.setItem('faceFlapHighScore', highScore);
+            }
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = highScore;
+            scoreHud.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('flex');
+        }
+
+        function update() {
+            bird.update();
+            
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            pipes.update();
+            if(bird.y + bird.collisionRadius >= canvas.height - ground.h) {
+                bird.y = canvas.height - ground.h - bird.collisionRadius;
+                sounds.hit();
+                gameOver();
+            }
+        }
+
+        function draw() {
+            ctx.save();
+            
+            // APPLY SHAKE
+            if (shakeDuration > 0) {
+                const magnitude = 8;
+                const dx = (Math.random() - 0.5) * magnitude;
+                const dy = (Math.random() - 0.5) * magnitude;
+                ctx.translate(dx, dy);
+                shakeDuration--;
+            }
+
+            if (gameMode === 'fire') {
+                const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGrad.addColorStop(0, '#2a0a0a');
+                bgGrad.addColorStop(1, '#550000');
+                ctx.fillStyle = bgGrad;
+            } else if (gameMode === 'night') {
+                const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGrad.addColorStop(0, '#0F172A');
+                bgGrad.addColorStop(1, '#1e1b4b');
+                ctx.fillStyle = bgGrad;
+            } else {
+                ctx.fillStyle = "#70c5ce";
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            background.draw();
+            pipes.draw();
+            ground.draw();
+            
+            // Draw Particles
+            particles.forEach(p => p.draw(ctx));
+
+            bird.draw();
+            
+            ctx.restore();
+        }
+
+        function loop() {
+            if(gameState !== 'PLAYING' && gameState !== 'GAMEOVER') return; // Allow drawing one last frame for game over
+            if(gameState === 'GAMEOVER') {
+                // If shaking, keep drawing to show effect, otherwise stop
+                if(shakeDuration > 0) {
+                    draw();
+                    requestAnimationFrame(loop);
+                }
+                return;
+            }
+            update();
+            draw();
+            frames++;
+            requestAnimationFrame(loop);
+        }
+
+        // --- Inputs ---
+        function doJump(e) {
+            if(e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            if(e.target.tagName === 'INPUT') return;
+            // Prevent jump if clicking inside any modal (including new download modal)
+            if(e.target.closest('#uploadModal') || 
+               e.target.closest('#musicModal') || 
+               e.target.closest('#settingsModal') ||
+               e.target.closest('#downloadModal')) return;
+
+            if(e.type === 'keydown' && e.code !== 'Space') return;
+            if(e.type === 'touchstart') e.preventDefault(); 
+
+            if(gameState === 'START' || gameState === 'GAMEOVER' || gameState === 'COUNTDOWN') return; 
+
+            if(gameState === 'PLAYING') {
+                bird.jump();
+            }
+        }
+
+        window.addEventListener('keydown', doJump);
+        window.addEventListener('mousedown', doJump);
+        window.addEventListener('touchstart', doJump, {passive: false});
+
+        startBtn.addEventListener('click', resetGame);
+        restartBtn.addEventListener('click', resetGame);
+        homeBtn.addEventListener('click', goHome);
+
+        init();
+    </script>
+</body>
+</html>
