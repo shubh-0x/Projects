@@ -1,0 +1,167 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tic Tac Toe — Created by Shubhanshu</title>
+  <style>
+    :root{ --bg:#7f4fc1; --black:#000; --white:#fff }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+    body{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}/* Start screen */
+.start-screen{width:100%;max-width:480px;background:transparent;border-radius:12px;text-align:center}
+h1.title{font-size:48px;margin:24px 0 14px;color:var(--black);font-weight:900;letter-spacing:1px}
+.start-btn{display:inline-block;background:var(--black);color:var(--white);padding:18px 36px;border-radius:8px;border:0;font-size:18px;cursor:pointer;font-weight:700}
+
+/* Footer small text */
+.creator{margin-top:28px;font-size:14px;color:var(--black);font-weight:700}
+
+/* Game area */
+.game-wrap{display:none;max-width:480px;width:100%;background:transparent;padding:18px;border-radius:12px}
+.info{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.turn{font-weight:800;color:var(--black)}
+
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:transparent}
+.cell{background:rgba(255,255,255,0.95);height:120px;display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:900;color:var(--black);border-radius:10px;cursor:pointer;user-select:none}
+@media (max-width:420px){ .cell{height:86px;font-size:48px} h1.title{font-size:40px} }
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center}
+.modal{background:var(--white);padding:22px;border-radius:12px;min-width:300px;text-align:center}
+.modal .msg{font-size:20px;font-weight:700;color:var(--black);margin-bottom:14px}
+.modal .actions{display:flex;gap:12px;justify-content:center}
+.btn{padding:10px 18px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+.btn.restart{background:#f44336;color:var(--white)}
+.btn.home{background:#000;color:var(--white)}
+.modal .creator-small{margin-top:12px;font-size:13px;color:var(--black);font-weight:700}
+
+/* subtle focus */
+.start-btn:focus, .btn:focus, .cell:focus{outline:3px solid rgba(0,0,0,0.08)}
+
+  </style>
+</head>
+<body>  <!-- START SCREEN -->  <div class="start-screen" id="startScreen">
+    <h1 class="title">TIK TAC TOE</h1>
+    <button class="start-btn" id="startBtn">START</button>
+    <div class="creator">CREATED BY ❤️ SHUBHANSHU</div>
+  </div>  <!-- GAME SCREEN -->  <div class="game-wrap" id="gameWrap">
+    <div class="info">
+      <div class="turn" id="turnText">Turn: X</div>
+      <button class="btn home" id="homeBtn">HOME</button>
+    </div><div class="board" id="board"></div>
+
+<div style="margin-top:12px;text-align:center">
+  <button class="btn restart" id="restartBtn">RESTART</button>
+</div>
+
+  </div>  <!-- MODAL -->  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div class="msg" id="modalMsg">CONGRATS 🎉 X WIN</div>
+      <div class="actions">
+        <button class="btn restart" id="modalRestart">RESTART</button>
+        <button class="btn home" id="modalHome">HOME</button>
+      </div>
+      <div class="creator-small">CREATED BY ❤️ SHUBHANSHU</div>
+    </div>
+  </div>  <script>
+    const startBtn = document.getElementById('startBtn');
+    const startScreen = document.getElementById('startScreen');
+    const gameWrap = document.getElementById('gameWrap');
+    const boardEl = document.getElementById('board');
+    const turnText = document.getElementById('turnText');
+    const restartBtn = document.getElementById('restartBtn');
+    const homeBtn = document.getElementById('homeBtn');
+
+    const modal = document.getElementById('modal');
+    const modalMsg = document.getElementById('modalMsg');
+    const modalRestart = document.getElementById('modalRestart');
+    const modalHome = document.getElementById('modalHome');
+
+    let board = Array(9).fill('');
+    let current = 'X';
+    let running = false;
+
+    const winCombos = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    function createBoard(){
+      boardEl.innerHTML = '';
+      for(let i=0;i<9;i++){
+        const c = document.createElement('div');
+        c.className = 'cell';
+        c.tabIndex = 0;
+        c.dataset.index = i;
+        c.addEventListener('click', onCellClick);
+        c.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') onCellClick.call(c); });
+        c.textContent = board[i];
+        boardEl.appendChild(c);
+      }
+    }
+
+    function onCellClick(){
+      const idx = Number(this.dataset.index);
+      if(!running || board[idx]) return;
+      board[idx] = current;
+      this.textContent = current;
+      checkGame();
+      current = current === 'X' ? 'O' : 'X';
+      turnText.textContent = 'Turn: ' + current;
+    }
+
+    function checkGame(){
+      for(const combo of winCombos){
+        const [a,b,c] = combo;
+        if(board[a] && board[a] === board[b] && board[a] === board[c]){
+          running = false;
+          showModal(`CONGRATS 🎉 ${board[a]} WIN`);
+          return;
+        }
+      }
+      if(board.every(cell => cell)){
+        running = false;
+        showModal("IT'S A DRAW!");
+      }
+    }
+
+    function showModal(text){
+      modalMsg.textContent = text;
+      modal.style.display = 'flex';
+    }
+
+    function hideModal(){ modal.style.display = 'none'; }
+
+    function startGame(){
+      startScreen.style.display = 'none';
+      gameWrap.style.display = 'block';
+      resetBoard();
+      running = true;
+    }
+
+    function resetBoard(){
+      board = Array(9).fill('');
+      current = 'X';
+      turnText.textContent = 'Turn: ' + current;
+      createBoard();
+      running = true;
+      hideModal();
+    }
+
+    function goHome(){
+      gameWrap.style.display = 'none';
+      startScreen.style.display = 'block';
+      resetBoard();
+      hideModal();
+    }
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', resetBoard);
+    homeBtn.addEventListener('click', goHome);
+    modalRestart.addEventListener('click', ()=>{ resetBoard(); hideModal(); });
+    modalHome.addEventListener('click', goHome);
+
+    createBoard();
+  </script></body>
+</html>
