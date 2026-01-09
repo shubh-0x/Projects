@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chess</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin:0; padding:0;
+    display:flex; justify-content:center; align-items:center;
+    height:100vh;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a1c4fd, #c2e9fb);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+  }
+  @keyframes gradientBG {
+    0% { background-position:0% 50%; }
+    50% { background-position:100% 50%; }
+    100% { background-position:0% 50%; }
+  }
+
+  #home { 
+    text-align:center; 
+    display:flex; 
+    flex-direction:column; 
+    align-items:center;
+  }
+  #home h1 { 
+    font-size: clamp(40px, 8vmin, 70px); 
+    font-weight:900; 
+    color:black; 
+    margin-bottom:20px; 
+  }
+  #home .buttonRow {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  #home button {
+    font-size: clamp(22px, 3.5vmin, 34px);
+    font-weight: 700;
+    padding: 1.8em 6em;   /* ⬅ increased length */
+    border: none;
+    background: black;
+    color: white;
+    cursor: pointer;
+    margin: 2vmin;
+    border-radius: 16px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    animation: pulse 2s infinite ease-in-out;
+  }
+  #home button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
+    50% { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+    100% { transform: scale(1); box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
+  }
+
+  #home p { 
+    margin-top:20px; 
+    font-weight:bold; 
+    font-size: clamp(14px, 2vmin, 20px);
+    color:black; 
+  }
+
+  #game { display:none; flex-direction:column; align-items:center; }
+
+  #controls {
+    margin-bottom:10px;
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  #controls button {
+    font-size: clamp(18px, 3vmin, 28px);
+    font-weight: bold;
+    margin: 1.2vmin;
+    padding: 1.2em 2.8em;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease;
+  }
+  #controls button:hover {
+    transform: scale(1.05);
+  }
+  .homeBtn { background:#333; color:white; }
+  .restartBtn { background:#4CAF50; color:white; }
+
+  #board {
+    display:grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
+    width:90vmin; height:90vmin;
+    border: 4px solid #333;
+    margin-bottom:10px;
+    box-shadow:0 8px 16px rgba(0,0,0,0.3);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .square {
+    display:flex; align-items:center; justify-content:center;
+    font-size:calc(90vmin / 10); cursor:pointer;
+    position:relative;
+  }
+  .light { background:#f0d9b5; }
+  .dark { background:#b58863; }
+  .selected { outline:3px solid yellow; }
+  .legalCircle {
+    position:absolute;
+    width:25%; height:25%;
+    border-radius:50%;
+    background:red;
+    opacity:0.8;
+    pointer-events:none;
+  }
+
+  #status { 
+    font-weight:bold; 
+    margin:8px; 
+    font-size: clamp(18px, 3.5vmin, 28px); 
+    color:black; 
+  }
+  #credit { 
+    font-size: clamp(14px, 2.5vmin, 20px); 
+    font-weight:bold; 
+    color:black; 
+    margin-top:10px; 
+  }
+
+  /* Popup */
+  #popup {
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.5); display:none;
+    justify-content:center; align-items:center;
+    animation: fadeIn 0.4s ease;
+  }
+  #popupBox {
+    background:white; 
+    padding:30px; 
+    border-radius:14px;
+    text-align:center; 
+    width: clamp(300px, 60vmin, 420px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+    transform: scale(0.8);
+    opacity: 0;
+    animation: popupAnim 0.4s forwards ease;
+  }
+  #popupBox h2 { 
+    margin-bottom:20px; 
+    font-size: clamp(20px, 4vmin, 32px);
+  }
+  #popupBox button {
+    margin:8px; 
+    padding: 1.2em 2.5em;
+    font-size: clamp(18px, 3vmin, 26px);
+    font-weight:600;
+    border:none; 
+    border-radius:10px; 
+    cursor:pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease;
+  }
+  #popupBox button:hover {
+    transform: scale(1.07);
+  }
+
+  @keyframes fadeIn {
+    from { background: rgba(0,0,0,0); }
+    to { background: rgba(0,0,0,0.5); }
+  }
+  @keyframes popupAnim {
+    to { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Home Screen -->
+<div id="home">
+  <h1>CHESS</h1>
+  <div class="buttonRow">
+    <button onclick="startGame(false)">Start (2 Players)</button>
+    <button onclick="startGame(true)">Play with Bot</button>
+  </div>
+  <p>CREATED BY ❤️ SHUBHANSHU</p>
+</div>
+
+<!-- Game Screen -->
+<div id="game">
+  <div id="controls">
+    <button class="homeBtn" onclick="goHome()">Home</button>
+    <button class="restartBtn" onclick="resetBoard()">Restart</button>
+  </div>
+  <div id="status">White to move</div>
+  <div id="board"></div>
+  <div id="credit">CREATED BY ❤️ SHUBHANSHU</div>
+</div>
+
+<!-- Popup -->
+<div id="popup">
+  <div id="popupBox">
+    <h2 id="winnerText"></h2>
+    <button class="restartBtn" onclick="resetBoard()">Restart</button>
+    <button class="homeBtn" onclick="goHome()">Home</button>
+    <p style="margin-top:10px; font-size:14px; font-weight:bold;">CREATED BY ❤️ SHUBHANSHU</p>
+  </div>
+</div>
+
+<script>
+const boardEl=document.getElementById("board");
+const statusEl=document.getElementById("status");
+const popup=document.getElementById("popup");
+const winnerText=document.getElementById("winnerText");
+
+const PIECES={
+  w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},
+  b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}
+};
+
+const pieceValue={k:1000,q:9,r:5,b:3,n:3,p:1};
+
+let board,whiteToMove,selected=null,legalMoves=[];
+let botMode=false;
+
+function startGame(vsBot){
+  document.getElementById("home").style.display="none";
+  document.getElementById("game").style.display="flex";
+  botMode=vsBot;
+  resetBoard();
+}
+
+function goHome(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("home").style.display="block";
+  popup.style.display="none";
+}
+
+function resetBoard(){
+  board=Array.from({length:8},()=>Array(8).fill(null));
+  const back=["r","n","b","q","k","b","n","r"];
+  for(let i=0;i<8;i++){
+    board[0][i]={type:back[i],color:"b",moved:false};
+    board[1][i]={type:"p",color:"b",moved:false};
+    board[6][i]={type:"p",color:"w",moved:false};
+    board[7][i]={type:back[i],color:"w",moved:false};
+  }
+  whiteToMove=true;
+  selected=null; legalMoves=[];
+  drawBoard();
+  statusEl.textContent="White to move";
+  popup.style.display="none";
+}
+
+function drawBoard(){
+  boardEl.innerHTML="";
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq=document.createElement("div");
+      sq.className="square "+(((r+c)%2===0)?"light":"dark");
+      sq.dataset.r=r; sq.dataset.c=c;
+      if(selected&&selected.r===r&&selected.c===c) sq.classList.add("selected");
+      const piece=board[r][c];
+      if(piece) sq.textContent=PIECES[piece.color][piece.type];
+      if(legalMoves.some(m=>m.r===r&&m.c===c)){
+        const dot=document.createElement("div");
+        dot.className="legalCircle";
+        sq.appendChild(dot);
+      }
+      sq.onclick=()=>onSquareClick(r,c);
+      boardEl.appendChild(sq);
+    }
+  }
+}
+
+function onSquareClick(r,c){
+  const piece=board[r][c];
+  if(selected){
+    if(legalMoves.some(m=>m.r===r&&m.c===c)){
+      movePiece(selected.r,selected.c,r,c);
+      selected=null; legalMoves=[];
+      drawBoard(); return;
+    }
+  }
+  if(piece&&piece.color===(whiteToMove?"w":"b")){
+    selected={r,c}; legalMoves=getLegalMoves(r,c,piece);
+  }else{selected=null; legalMoves=[];}
+  drawBoard();
+}
+
+function movePiece(fr,fc,tr,tc){
+  const moving=board[fr][fc];
+  const target=board[tr][tc];
+  board[tr][tc]={...moving,moved:true};
+  board[fr][fc]=null;
+
+  // ✅ Pawn Promotion
+  if (moving.type === "p" && (tr === 0 || tr === 7)) {
+    board[tr][tc] = { type: "q", color: moving.color, moved: true };
+  }
+
+  // ✅ Show popup if a king is captured
+  if (target && target.type === "k") {
+    popup.style.display = "flex";
+    winnerText.textContent = (moving.color === "w" ? "White" : "Black") + " Wins by Capturing King!";
+    return;
+  }
+
+  whiteToMove=!whiteToMove;
+  statusEl.textContent=(whiteToMove?"White":"Black")+" to move";
+  drawBoard();
+
+  if (checkGameEnd()) return;
+
+  if(botMode && !whiteToMove){
+    setTimeout(botMove,500);
+  }
+}
+
+function getMoves(r,c,p){
+  const moves=[];
+  const add=(tr,tc)=>{
+    if(tr>=0&&tr<8&&tc>=0&&tc<8){
+      if(!board[tr][tc]||board[tr][tc].color!==p.color)moves.push({r:tr,c:tc});
+    }
+  };
+  if(p.type==="p"){
+    const dir=p.color==="w"?-1:1;
+    if(board[r+dir] && !board[r+dir][c]) add(r+dir,c);
+    if(!p.moved && board[r+dir] && !board[r+dir][c] && board[r+2*dir] && !board[r+2*dir][c]) 
+      add(r+2*dir,c);
+    for(const dc of[-1,1]){
+      if(board[r+dir]&&board[r+dir][c+dc]&&board[r+dir][c+dc].color!==p.color) add(r+dir,c+dc);
+    }
+  }
+  if(p.type==="n"){
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(r+dr,c+dc));
+  }
+  if(p.type==="b"||p.type==="q"){
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>{
+      let tr=r+dr,tc=c+dc;
+      while(tr>=0&&tr<8&&tc>=0&&tc<8){
+        if(!board[tr][tc]) moves.push({r:tr,c:tc});
+        else{if(board[tr][tc].color!==p.color)moves.push({r:tr,c:tc}); break;}
+        tr+=dr; tc+=dc;
+      }
+    });
+  }
+  if(p.type==="r"||p.type==="q"){
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      let tr=r+dr,tc=c+dc;
+      while(tr>=0&&tr<8&&tc>=0&&tc<8){
+        if(!board[tr][tc]) moves.push({r:tr,c:tc});
+        else{if(board[tr][tc].color!==p.color)moves.push({r:tr,c:tc}); break;}
+        tr+=dr; tc+=dc;
+      }
+    });
+  }
+  if(p.type==="k"){
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(dr||dc)add(r+dr,c+dc);
+  }
+  return moves;
+}
+
+function cloneBoard(b){ return b.map(row=>row.map(cell=>cell?{...cell}:null)); }
+
+function kingInCheck(color, b){
+  let kr,kc;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    if(b[r][c] && b[r][c].type==="k" && b[r][c].color===color){ kr=r; kc=c; }
+  }
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=b[r][c];
+    if(p && p.color!==color){
+      const moves=getMoves(r,c,p);
+      if(moves.some(m=>m.r===kr&&m.c===kc)) return true;
+    }
+  }
+  return false;
+}
+
+function getLegalMoves(r,c,p){
+  const raw=getMoves(r,c,p);
+  return raw.filter(m=>{
+    const copy=cloneBoard(board);
+    copy[m.r][m.c]={...p,moved:true};
+    copy[r][c]=null;
+    return !kingInCheck(p.color,copy);
+  });
+}
+
+function checkGameEnd() {
+  const color = whiteToMove ? "w" : "b";
+  let hasMoves = false;
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p && p.color === color) {
+        if (getLegalMoves(r, c, p).length > 0) {
+          hasMoves = true;
+          break;
+        }
+      }
+    }
+    if (hasMoves) break;
+  }
+
+  if (!hasMoves) {
+    if (kingInCheck(color, board)) {
+      popup.style.display = "flex";
+      winnerText.textContent = (color === "w" ? "Black" : "White") + " Wins by Checkmate!";
+    } else {
+      popup.style.display = "flex";
+      winnerText.textContent = "Draw by Stalemate!";
+    }
+    return true;
+  }
+  return false;
+}
+
+function botMove(){
+  const allMoves=[];
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const p=board[r][c];
+      if(p && p.color==="b"){
+        const moves=getLegalMoves(r,c,p);
+        moves.forEach(m=>allMoves.push({fr:r,fc:c,tr:m.r,tc:m.c,p}));
+      }
+    }
+  }
+  if(allMoves.length===0) return;
+
+  let bestMove=null, bestVal=-999;
+  for(const mv of allMoves){
+    const target=board[mv.tr][mv.tc];
+    let score=0;
+    if(target) score=pieceValue[target.type]||0;
+    if(score>bestVal){ bestVal=score; bestMove=mv; }
+  }
+  if(!bestMove) bestMove=allMoves[Math.floor(Math.random()*allMoves.length)];
+  movePiece(bestMove.fr,bestMove.fc,bestMove.tr,bestMove.tc);
+}
+</script>
+</body>
+</html>
