@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Origin | CREATED BY ❤️ SHUBHANSHU</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1218;
+            color: #ffffff;
+            height: 100dvh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .glass-morphism {
+            background: rgba(23, 28, 38, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+        }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes msgPop {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .msg-in {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .msg-out {
+            background: linear-gradient(135deg, #0088cc, #00aaff);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+        }
+
+        .inline-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .inline-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .admin-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            outline: none;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .admin-field:focus { border-color: #0088cc; }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.bottom-0\.5{bottom:0.125rem}.right-0\.5{right:0.125rem}.right-4{right:1rem}.top-16{top:4rem}.z-20{z-index:20}.z-50{z-index:50}.z-\[60\]{z-index:60}.z-\[70\]{z-index:70}.mb-6{margin-bottom:1.5rem}.mb-3{margin-bottom:0.75rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-12{height:3rem}.h-3\.5{height:0.875rem}.h-full{height:100%}.w-12{width:3rem}.w-3\.5{width:0.875rem}.w-44{width:11rem}.w-full{width:100%}.max-w-\[480px\]{max-width:480px}.flex-1{flex:1 1 0%}.cursor-pointer{cursor:pointer}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-\[32px\]{border-radius:32px}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.rounded-lg{border-radius:0.5rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-\[\#0088cc\]\/30{border-color:rgb(0 136 204 / 0.3)}.border-\[\#1a1f2b\]{--tw-border-opacity:1;border-color:rgb(26 31 43 / var(--tw-border-opacity, 1))}.border-white\/10{border-color:rgb(255 255 255 / 0.1)}.border-white\/20{border-color:rgb(255 255 255 / 0.2)}.border-white\/5{border-color:rgb(255 255 255 / 0.05)}.bg-\[\#0088cc\]{--tw-bg-opacity:1;background-color:rgb(0 136 204 / var(--tw-bg-opacity, 1))}.bg-\[\#0088cc\]\/20{background-color:rgb(0 136 204 / 0.2)}.bg-\[\#0f1218\]{--tw-bg-opacity:1;background-color:rgb(15 18 24 / var(--tw-bg-opacity, 1))}.bg-black\/20{background-color:rgb(0 0 0 / 0.2)}.bg-black\/30{background-color:rgb(0 0 0 / 0.3)}.bg-black\/90{background-color:rgb(0 0 0 / 0.9)}.bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-white\/5{background-color:rgb(255 255 255 / 0.05)}.object-cover{object-fit:cover}.p-2{padding:0.5rem}.p-3\.5{padding:0.875rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}.text-left{text-align:left}.text-center{text-align:center}.text-\[10px\]{font-size:10px}.text-\[9px\]{font-size:9px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.uppercase{text-transform:uppercase}.tracking-\[0\.1em\]{letter-spacing:0.1em}.tracking-tight{letter-spacing:-0.025em}.tracking-widest{letter-spacing:0.1em}.text-\[\#0088cc\]{--tw-text-opacity:1;color:rgb(0 136 204 / var(--tw-text-opacity, 1))}.text-\[\#38bdf8\]{--tw-text-opacity:1;color:rgb(56 189 248 / var(--tw-text-opacity, 1))}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-white\/20{color:rgb(255 255 255 / 0.2)}.text-white\/30{color:rgb(255 255 255 / 0.3)}.text-white\/40{color:rgb(255 255 255 / 0.4)}.text-white\/80{color:rgb(255 255 255 / 0.8)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-blue-500\/20{--tw-shadow-color:rgb(59 130 246 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-green-600\/30{--tw-shadow-color:rgb(22 163 74 / 0.3);--tw-shadow:var(--tw-shadow-colored)}.outline-none{outline:2px solid transparent;outline-offset:2px}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-\[\#0099ee\]:hover{--tw-bg-opacity:1;background-color:rgb(0 153 238 / var(--tw-bg-opacity, 1))}.hover\:bg-green-500:hover{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity, 1))}.hover\:bg-white\/10:hover{background-color:rgb(255 255 255 / 0.1)}.hover\:bg-white\/5:hover{background-color:rgb(255 255 255 / 0.05)}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.focus\:border-\[\#0088cc\]:focus{--tw-border-opacity:1;border-color:rgb(0 136 204 / var(--tw-border-opacity, 1))}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@media (min-width: 640px){.sm\:h-\[90vh\]{height:90vh}.sm\:rounded-\[40px\]{border-radius:40px}}</style></head>
+<body>
+
+    <!-- App Wrapper -->
+    <div id="app-container" class="w-full max-w-[480px] h-full sm:h-[90vh] flex flex-col glass-morphism sm:rounded-[40px] relative overflow-hidden shadow-2xl">
+        <div id="dynamic-bg" class="chat-bg-layer" style="background-image: url(&quot;https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=1964&amp;auto=format&amp;fit=crop&quot;);"></div>
+
+        <!-- Header -->
+        <header class="p-4 flex items-center justify-between border-b border-white/10 bg-black/30 backdrop-blur-xl z-20">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img id="bot-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Origin&amp;backgroundColor=b6e3f4" class="w-12 h-12 rounded-full object-cover border-2 border-white/20">
+                    <div class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1f2b] rounded-full"></div>
+                </div>
+                <div>
+                    <h2 id="bot-name-label" class="font-bold text-white text-lg tracking-tight">Origin</h2>
+                    <p id="dev-credit-label" class="text-blue-400 text-[9px] font-bold uppercase tracking-[0.1em]">CREATED BY ❤️ SHUBHANSHU</p>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="p-2 text-white/40 hover:text-white transition rounded-full hover:bg-white/5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+            </button>
+            
+            <div id="drop-menu" class="absolute right-4 top-16 w-44 glass-morphism rounded-2xl py-2 z-50 shadow-2xl border border-white/10 hidden">
+                <button onclick="triggerLogin()" class="w-full text-left px-5 py-3 text-sm text-white/80 hover:bg-white/10 flex items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"></path></svg>
+                    Admin Login
+                </button>
+            </div>
+        </header>
+
+        <!-- Message List -->
+        <main id="chat-scroller" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scroll"></main>
+
+        <!-- Input Section -->
+        <footer id="footer-actions" class="p-4 bg-black/30 border-t border-white/10 backdrop-blur-xl">
+            <button id="start-btn" onclick="activateChat()" class="w-full bg-[#0088cc] hover:bg-[#0099ee] text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                START
+            </button>
+            
+            <div id="chat-input-row" class="flex items-center gap-3 hidden">
+                <input type="text" id="msg-box" placeholder="Write game name..." class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-[#0088cc] transition">
+                <button onclick="handleUserSend()" class="bg-[#0088cc] text-white p-3.5 rounded-2xl hover:bg-[#0099ee] transition shadow-lg">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Overlays -->
+        <div id="login-overlay" class="absolute inset-0 bg-black/90 backdrop-blur-xl z-[60] flex items-center justify-center p-8 hidden">
+            <div class="w-full glass-morphism rounded-[32px] p-8 text-center border border-white/20">
+                <h3 class="text-xl font-bold mb-6 text-white">Administrator</h3>
+                <input type="password" id="admin-pass-inp" placeholder="Password" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white mb-6 outline-none focus:border-[#0088cc]">
+                <div class="flex gap-3">
+                    <button onclick="cancelLogin()" class="flex-1 text-white/30 text-sm font-medium">Cancel</button>
+                    <button onclick="authAdmin()" class="flex-1 bg-[#0088cc] py-3 rounded-xl font-bold text-white shadow-lg">Unlock</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-dashboard" class="absolute inset-0 bg-[#0f1218] z-[70] flex flex-col hidden">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h2 class="font-bold text-[#0088cc] uppercase tracking-widest text-xs">Bot Core Settings</h2>
+                <button onclick="exitAdmin()" class="text-white/20 hover:text-white">Close</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll">
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-white/20 uppercase tracking-widest">Visual Assets</p>
+                    <input type="text" id="set-avatar" placeholder="Avatar Image URL" class="admin-field">
+                    <input type="text" id="set-bg" placeholder="Chat Background URL" class="admin-field">
+                    <input type="text" id="set-poster" placeholder="Games List Poster URL" class="admin-field">
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-white/20 uppercase tracking-widest">Game Database</p>
+                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-3">
+                        <input type="text" id="add-g-name" placeholder="Game Title" class="admin-field">
+                        <input type="text" id="add-g-w1" placeholder="Website Link 1" class="admin-field">
+                        <input type="text" id="add-g-w2" placeholder="Website Link 2" class="admin-field">
+                        <input type="text" id="add-g-app" placeholder="App Download Link" class="admin-field">
+                        <button onclick="registerGame()" class="w-full bg-[#0088cc]/20 text-[#38bdf8] py-3 rounded-xl text-xs font-bold border border-[#0088cc]/30">Update Database</button>
+                    </div>
+                    <div id="game-inventory" class="grid grid-cols-2 gap-2 text-[10px]"><div class="bg-white/5 p-2 rounded-lg border border-white/5 truncate">🎮 Cyber Strike</div></div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-white/10 bg-black/20">
+                <button onclick="exportUpdatedApp()" class="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-green-600/30">
+                    SAVE &amp; DOWNLOAD NEW FILE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Persistence -->
+    <script id="app-state-data">
+        /* STATE_START */
+        window.BOT_STATE = {
+        "botName": "Origin",
+        "developer": "CREATED BY ❤️ SHUBHANSHU",
+        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Origin&backgroundColor=b6e3f4",
+        "background": "",
+        "poster": "https://uploads.onecompiler.io/445ftccmg/44a3w38q3/unnamed%20(4)~2.jpg",
+        "games": [
+                {
+                        "name": "Cyber Strike",
+                        "w1": "https://google.com",
+                        "w2": "https://bing.com",
+                        "app": "https://example.com/download"
+                }
+        ]
+};
+        /* STATE_END */
+    </script>
+
+    <script>
+        const state = window.BOT_STATE;
+        const chatContainer = document.getElementById('chat-scroller');
+        const msgBox = document.getElementById('msg-box');
+
+        function loadConfig() {
+            document.getElementById('bot-avatar').src = state.avatar;
+            document.getElementById('bot-name-label').textContent = state.botName;
+            document.getElementById('dev-credit-label').textContent = state.developer;
+            document.getElementById('dynamic-bg').style.backgroundImage = `url('${state.background}')`;
+            
+            // Sync Admin UI
+            document.getElementById('set-avatar').value = state.avatar;
+            document.getElementById('set-bg').value = state.background;
+            document.getElementById('set-poster').value = state.poster;
+            updateInventoryList();
+        }
+
+        function pushMsg(content, side, img = null, buttons = []) {
+            const wrap = document.createElement('div');
+            wrap.className = `msg-bubble ${side === 'in' ? 'msg-in' : 'msg-out'}`;
+            
+            if (img) {
+                const i = document.createElement('img');
+                i.src = img;
+                i.className = "rounded-xl mb-3 w-full border border-white/10 shadow-lg cursor-pointer";
+                i.onclick = () => window.open(img, '_blank');
+                wrap.appendChild(i);
+            }
+
+            if (content) {
+                const p = document.createElement('p');
+                // Reverted formatting: Allowing stars/markdown-like bolding via simple replace
+                let formatted = content.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                p.innerHTML = formatted.replace(/\n/g, '<br>');
+                wrap.appendChild(p);
+            }
+
+            if (buttons && buttons.length > 0) {
+                buttons.forEach(btn => {
+                    if (btn.url) {
+                        const a = document.createElement('a');
+                        a.href = btn.url;
+                        a.target = "_blank";
+                        a.className = "inline-btn";
+                        a.textContent = btn.label;
+                        wrap.appendChild(a);
+                    }
+                });
+            }
+
+            chatContainer.appendChild(wrap);
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        }
+
+        function activateChat() {
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('chat-input-row').classList.remove('hidden');
+            
+            setTimeout(() => {
+                const hello = `Hello! I am **${state.botName}**.\n**${state.developer}**\n\nType the name of a game below to get its links.`;
+                pushMsg(hello, 'in', state.poster);
+            }, 400);
+        }
+
+        function handleUserSend() {
+            const query = msgBox.value.trim();
+            if (!query) return;
+
+            pushMsg(query, 'out');
+            msgBox.value = '';
+
+            setTimeout(() => {
+                const gameFound = state.games.find(g => g.name.toLowerCase() === query.toLowerCase());
+                if (gameFound) {
+                    const btnList = [];
+                    if (gameFound.w1) btnList.push({ label: '🌐 Website 1', url: gameFound.w1 });
+                    if (gameFound.w2) btnList.push({ label: '🌐 Website 2', url: gameFound.w2 });
+                    if (gameFound.app) btnList.push({ label: '📲 Download App', url: gameFound.app });
+                    
+                    pushMsg(`Links for **${gameFound.name}**:`, 'in', null, btnList);
+                } else {
+                    pushMsg("Check your spelling! I could not find that game. Please refer to this list:", "in", state.poster);
+                }
+            }, 600);
+        }
+
+        // Admin
+        function toggleMenu() { document.getElementById('drop-menu').classList.toggle('hidden'); }
+        function triggerLogin() { toggleMenu(); document.getElementById('login-overlay').classList.remove('hidden'); }
+        function cancelLogin() { document.getElementById('login-overlay').classList.add('hidden'); }
+        function exitAdmin() { document.getElementById('admin-dashboard').classList.add('hidden'); }
+
+        function authAdmin() {
+            if (document.getElementById('admin-pass-inp').value === '@123shubh') {
+                cancelLogin();
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-pass-inp').value = '';
+            } else {
+                alert("Access Denied");
+            }
+        }
+
+        function registerGame() {
+            const name = document.getElementById('add-g-name').value.trim();
+            if (!name) return alert("Title required");
+            
+            state.games = state.games.filter(g => g.name.toLowerCase() !== name.toLowerCase());
+            
+            state.games.push({
+                name: name,
+                w1: document.getElementById('add-g-w1').value,
+                w2: document.getElementById('add-g-w2').value,
+                app: document.getElementById('add-g-app').value
+            });
+            
+            updateInventoryList();
+            alert("Game database updated!");
+        }
+
+        function updateInventoryList() {
+            const inv = document.getElementById('game-inventory');
+            inv.innerHTML = state.games.map(g => `<div class="bg-white/5 p-2 rounded-lg border border-white/5 truncate">🎮 ${g.name}</div>`).join('');
+        }
+
+        function exportUpdatedApp() {
+            state.avatar = document.getElementById('set-avatar').value;
+            state.background = document.getElementById('set-bg').value;
+            state.poster = document.getElementById('set-poster').value;
+
+            let htmlStr = document.documentElement.outerHTML;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlStr, 'text/html');
+            
+            doc.getElementById('login-overlay').classList.add('hidden');
+            doc.getElementById('admin-dashboard').classList.add('hidden');
+            doc.getElementById('drop-menu').classList.add('hidden');
+            doc.getElementById('start-btn').classList.remove('hidden');
+            doc.getElementById('chat-input-row').classList.add('hidden');
+            doc.getElementById('chat-scroller').innerHTML = '';
+
+            let finalHtml = doc.documentElement.outerHTML;
+            const regex = /\/\* STATE_START \*\/([\s\S]*?)\/\* STATE_END \*\//;
+            const newConfig = `\n        window.BOT_STATE = ${JSON.stringify(state, null, 8)};\n        `;
+            const cleanFinal = `<!DOCTYPE html>\n` + finalHtml.replace(regex, `/* STATE_START */${newConfig}/* STATE_END */`);
+
+            const blob = new Blob([cleanFinal], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Origin_Bot_Final.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert("Application updated and downloaded successfully!");
+        }
+
+        msgBox.onkeypress = (e) => { if(e.key === 'Enter') handleUserSend(); };
+        window.onclick = (e) => { if(!e.target.closest('header')) document.getElementById('drop-menu').classList.add('hidden'); };
+        
+        loadConfig();
+    </script>
+
+</body></html>
