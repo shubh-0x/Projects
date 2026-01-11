@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Origin | CREATED BY ❤️ SHUBHANSHU</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1218;
+            color: #ffffff;
+            height: 100dvh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .glass-morphism {
+            background: rgba(23, 28, 38, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+        }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes msgPop {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .msg-in {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .msg-out {
+            background: linear-gradient(135deg, #0088cc, #00aaff);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+        }
+
+        .inline-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .inline-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .admin-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            outline: none;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .admin-field:focus { border-color: #0088cc; }
+
+        /* Search Suggestion Styles */
+        #search-suggestions {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            transition: background 0.2s, color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .suggestion-item:hover {
+            background: rgba(0, 136, 204, 0.2);
+            color: #38bdf8;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container" class="w-full max-w-[480px] h-full sm:h-[90vh] flex flex-col glass-morphism sm:rounded-[40px] relative overflow-hidden shadow-2xl">
+        <div id="dynamic-bg" class="chat-bg-layer"></div>
+
+        <header class="p-4 flex items-center justify-between border-b border-white/10 bg-black/30 backdrop-blur-xl z-20">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img id="bot-avatar" src="" class="w-12 h-12 rounded-full object-cover border-2 border-white/20">
+                    <div class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1f2b] rounded-full"></div>
+                </div>
+                <div>
+                    <h2 id="bot-name-label" class="font-bold text-white text-lg tracking-tight">Origin</h2>
+                    <p id="dev-credit-label" class="text-blue-400 text-[9px] font-bold uppercase tracking-[0.1em]">CREATED BY ❤️ SHUBHANSHU</p>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="p-2 text-white/40 hover:text-white transition rounded-full hover:bg-white/5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+            </button>
+            
+            <div id="drop-menu" class="absolute right-4 top-16 w-44 glass-morphism rounded-2xl py-2 z-50 shadow-2xl border border-white/10 hidden">
+                <button onclick="triggerLogin()" class="w-full text-left px-5 py-3 text-sm text-white/80 hover:bg-white/10 flex items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"></path></svg>
+                    Admin Login
+                </button>
+            </div>
+        </header>
+
+        <main id="chat-scroller" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scroll"></main>
+
+        <footer id="footer-actions" class="p-4 bg-black/30 border-t border-white/10 backdrop-blur-xl flex flex-col">
+            
+            <!-- Dynamic Search Area -->
+            <div id="search-suggestions" class="hidden bg-white/5 rounded-2xl custom-scroll border border-white/10"></div>
+
+            <button id="start-btn" onclick="activateChat()" class="w-full bg-[#0088cc] hover:bg-[#0099ee] text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                START
+            </button>
+            
+            <div id="chat-input-row" class="hidden flex items-center gap-3">
+                <input type="text" id="msg-box" placeholder="Find a game..." autocomplete="off" oninput="showSuggestions(this.value)" class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-[#0088cc] transition">
+                <button onclick="handleUserSend()" class="bg-[#0088cc] text-white p-3.5 rounded-2xl hover:bg-[#0099ee] transition shadow-lg">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Admin Overlays -->
+        <div id="login-overlay" class="absolute inset-0 bg-black/90 backdrop-blur-xl z-[60] flex items-center justify-center p-8 hidden">
+            <div class="w-full glass-morphism rounded-[32px] p-8 text-center border border-white/20">
+                <h3 class="text-xl font-bold mb-6 text-white">Administrator</h3>
+                <input type="password" id="admin-pass-inp" placeholder="Password" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white mb-6 outline-none focus:border-[#0088cc]">
+                <div class="flex gap-3">
+                    <button onclick="cancelLogin()" class="flex-1 text-white/30 text-sm font-medium">Cancel</button>
+                    <button onclick="authAdmin()" class="flex-1 bg-[#0088cc] py-3 rounded-xl font-bold text-white shadow-lg">Unlock</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-dashboard" class="absolute inset-0 bg-[#0f1218] z-[70] flex flex-col hidden">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h2 class="font-bold text-[#0088cc] uppercase tracking-widest text-xs">Bot Core Settings</h2>
+                <button onclick="exitAdmin()" class="text-white/20 hover:text-white">Close</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll">
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-white/20 uppercase tracking-widest">Visual Assets</p>
+                    <input type="text" id="set-avatar" placeholder="Avatar Image URL" class="admin-field">
+                    <input type="text" id="set-bg" placeholder="Chat Background URL" class="admin-field">
+                    <input type="text" id="set-poster" placeholder="Games List Poster URL" class="admin-field">
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-white/20 uppercase tracking-widest">Game Database</p>
+                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-3">
+                        <input type="text" id="add-g-name" placeholder="Game Title" class="admin-field">
+                        <input type="text" id="add-g-w1" placeholder="Website Link 1" class="admin-field">
+                        <input type="text" id="add-g-w2" placeholder="Website Link 2" class="admin-field">
+                        <input type="text" id="add-g-app" placeholder="App Download Link" class="admin-field">
+                        <button onclick="registerGame()" class="w-full bg-[#0088cc]/20 text-[#38bdf8] py-3 rounded-xl text-xs font-bold border border-[#0088cc]/30">Update Database</button>
+                    </div>
+                    <div id="game-inventory" class="grid grid-cols-2 gap-2 text-[10px]"></div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-white/10 bg-black/20">
+                <button onclick="exportUpdatedApp()" class="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-green-600/30">
+                    SAVE & DOWNLOAD NEW FILE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Data -->
+    <script id="app-state-data">
+        /* STATE_START */
+        window.BOT_STATE = {
+            "botName": "Origin",
+            "developer": "CREATED BY ❤️ SHUBHANSHU",
+            "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Origin&backgroundColor=b6e3f4",
+            "background": "https://uploads.onecompiler.io/445ftccmg/44a5ufe7q/unnamed%20(4).jpg",
+            "poster": "https://uploads.onecompiler.io/445ftccmg/44a5ufe7q/unnamed%20(4)~2.jpg",
+            "games": [
+                { "name": "Cyber Strike", "w1": "https://google.com", "w2": "", "app": "" },
+                { "name": "Ping Pong", "w1": "https://shubhpingpong.tiiny.site/", "w2": "https://shubh-0x.github.io/Projects/PingPong.html", "app": "" },
+                { "name": "Chess", "w1": "https://shubhchess.tiiny.site/", "w2": "https://shubh-0x.github.io/Projects/Chess.html", "app": "" },
+                { "name": "Maze Escape", "w1": "https://shubh-0x.github.io/Projects/MazeEscape.html", "w2": "", "app": "" },
+                { "name": "Tic Tac Toe", "w1": "https://shubh-0x.github.io/Projects/Tic%20tac%20Toe.html", "w2": "", "app": "" },
+                { "name": "Shubh Flap", "w1": "https://shubhflap.tiiny.site/", "w2": "http://shubh-0x.github.io/Projects/shubhflap-1.html", "app": "" }
+            ]
+        };
+        /* STATE_END */
+    </script>
+
+    <script>
+        const state = window.BOT_STATE;
+        const chatContainer = document.getElementById('chat-scroller');
+        const msgBox = document.getElementById('msg-box');
+        const suggestionArea = document.getElementById('search-suggestions');
+
+        function loadConfig() {
+            document.getElementById('bot-avatar').src = state.avatar;
+            document.getElementById('bot-name-label').textContent = state.botName;
+            document.getElementById('dev-credit-label').textContent = state.developer;
+            document.getElementById('dynamic-bg').style.backgroundImage = `url('${state.background}')`;
+            
+            document.getElementById('set-avatar').value = state.avatar;
+            document.getElementById('set-bg').value = state.background;
+            document.getElementById('set-poster').value = state.poster;
+            updateInventoryList();
+        }
+
+        // --- Smart Sorting Search Logic ---
+        function showSuggestions(val) {
+            const query = val.toLowerCase().trim();
+            if (!query) {
+                suggestionArea.classList.add('hidden');
+                return;
+            }
+
+            // 1. Filter games that contain the string
+            // 2. Map them to include the index of the first occurrence
+            const matches = state.games
+                .map(g => ({ ...g, matchIndex: g.name.toLowerCase().indexOf(query) }))
+                .filter(g => g.matchIndex !== -1);
+
+            // 3. Sort by matchIndex (position of the alphabet)
+            // index 0 (starts with) comes first, index 1 comes second, etc.
+            matches.sort((a, b) => a.matchIndex - b.matchIndex);
+
+            if (matches.length > 0) {
+                suggestionArea.innerHTML = matches.map(g => `
+                    <div class="suggestion-item text-white/90" onclick="selectGame('${g.name.replace(/'/g, "\\'")}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <span>${g.name}</span>
+                    </div>
+                `).join('');
+                suggestionArea.classList.remove('hidden');
+            } else {
+                suggestionArea.classList.add('hidden');
+            }
+        }
+
+        function selectGame(name) {
+            msgBox.value = name;
+            suggestionArea.classList.add('hidden');
+            handleUserSend();
+        }
+
+        function pushMsg(content, side, img = null, buttons = []) {
+            const wrap = document.createElement('div');
+            wrap.className = `msg-bubble ${side === 'in' ? 'msg-in' : 'msg-out'}`;
+            
+            if (img) {
+                const i = document.createElement('img');
+                i.src = img;
+                i.className = "rounded-xl mb-3 w-full border border-white/10 shadow-lg cursor-pointer";
+                i.onclick = () => window.open(img, '_blank');
+                wrap.appendChild(i);
+            }
+
+            if (content) {
+                const p = document.createElement('p');
+                p.innerHTML = content.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+                wrap.appendChild(p);
+            }
+
+            if (buttons && buttons.length > 0) {
+                buttons.forEach(btn => {
+                    const a = document.createElement('a');
+                    a.href = btn.url;
+                    a.target = "_blank";
+                    a.className = "inline-btn";
+                    a.textContent = btn.label;
+                    wrap.appendChild(a);
+                });
+            }
+
+            chatContainer.appendChild(wrap);
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        }
+
+        function activateChat() {
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('chat-input-row').classList.remove('hidden');
+            setTimeout(() => {
+                pushMsg(`Hello! I am **${state.botName}**.\nSearch for any game by name.`, 'in', state.poster);
+            }, 400);
+        }
+
+        function handleUserSend() {
+            const query = msgBox.value.trim();
+            if (!query) return;
+
+            suggestionArea.classList.add('hidden');
+            pushMsg(query, 'out');
+            msgBox.value = '';
+
+            setTimeout(() => {
+                const game = state.games.find(g => g.name.toLowerCase() === query.toLowerCase());
+                if (game) {
+                    const btnList = [];
+                    if (game.w1) btnList.push({ label: '🌐 Website 1', url: game.w1 });
+                    if (game.w2) btnList.push({ label: '🌐 Website 2', url: game.w2 });
+                    if (game.app) btnList.push({ label: '📲 Download App', url: game.app });
+                    pushMsg(`Links for **${game.name}**:`, 'in', null, btnList);
+                } else {
+                    pushMsg(`No exact match for "**${query}**".`, "in");
+                }
+            }, 600);
+        }
+
+        // Admin functionality
+        function toggleMenu() { document.getElementById('drop-menu').classList.toggle('hidden'); }
+        function triggerLogin() { toggleMenu(); document.getElementById('login-overlay').classList.remove('hidden'); }
+        function cancelLogin() { document.getElementById('login-overlay').classList.add('hidden'); }
+        function exitAdmin() { document.getElementById('admin-dashboard').classList.add('hidden'); }
+
+        function authAdmin() {
+            if (document.getElementById('admin-pass-inp').value === '@123shubh') {
+                cancelLogin();
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-pass-inp').value = '';
+            } else { alert("Access Denied"); }
+        }
+
+        function registerGame() {
+            const name = document.getElementById('add-g-name').value.trim();
+            if (!name) return;
+            state.games = state.games.filter(g => g.name.toLowerCase() !== name.toLowerCase());
+            state.games.push({
+                name: name,
+                w1: document.getElementById('add-g-w1').value,
+                w2: document.getElementById('add-g-w2').value,
+                app: document.getElementById('add-g-app').value
+            });
+            updateInventoryList();
+            alert("Updated!");
+        }
+
+        function updateInventoryList() {
+            document.getElementById('game-inventory').innerHTML = state.games.map(g => `<div class="bg-white/5 p-2 rounded-lg border border-white/5 truncate">🎮 ${g.name}</div>`).join('');
+        }
+
+        function exportUpdatedApp() {
+            state.avatar = document.getElementById('set-avatar').value;
+            state.background = document.getElementById('set-bg').value;
+            state.poster = document.getElementById('set-poster').value;
+
+            const doc = new DOMParser().parseFromString(document.documentElement.outerHTML, 'text/html');
+            doc.getElementById('login-overlay').classList.add('hidden');
+            doc.getElementById('admin-dashboard').classList.add('hidden');
+            doc.getElementById('drop-menu').classList.add('hidden');
+            doc.getElementById('start-btn').classList.remove('hidden');
+            doc.getElementById('chat-input-row').classList.add('hidden');
+            doc.getElementById('chat-scroller').innerHTML = '';
+            doc.getElementById('search-suggestions').classList.add('hidden');
+
+            const regex = /\/\* STATE_START \*\/([\s\S]*?)\/\* STATE_END \*\//;
+            const newConfig = `\n        window.BOT_STATE = ${JSON.stringify(state, null, 8)};\n        `;
+            const finalHtml = `<!DOCTYPE html>\n` + doc.documentElement.outerHTML.replace(regex, `/* STATE_START */${newConfig}/* STATE_END */`);
+
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([finalHtml], { type: 'text/html' }));
+            a.download = "OriginBot.html";
+            a.click();
+        }
+
+        msgBox.onkeypress = (e) => { if(e.key === 'Enter') handleUserSend(); };
+        window.onclick = (e) => { 
+            if(!e.target.closest('header')) document.getElementById('drop-menu').classList.add('hidden'); 
+            if(!e.target.closest('#footer-actions')) suggestionArea.classList.add('hidden');
+        };
+        
+        loadConfig();
+    </script>
+</body>
+</html>
