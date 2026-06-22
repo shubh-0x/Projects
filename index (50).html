@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Bluetooth Mic & Equalizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f172a; /* Tailwind slate-900 */
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        
+        .mic-btn-active {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header -->
+    <header class="w-full max-w-md mt-6 mb-8 text-center">
+        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            <i class="fa-solid fa-microphone-lines mr-2"></i>Livecast Mic
+        </h1>
+        <p class="text-slate-400 text-sm mt-2">Route phone mic to Bluetooth speaker</p>
+    </header>
+
+    <!-- Warning Card -->
+    <div class="w-full max-w-md bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-4 mb-6 text-yellow-200 text-xs text-center flex items-center justify-center gap-3">
+        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+        <p>Keep your Bluetooth speaker away from your phone's mic to prevent loud feedback loop (screeching)!</p>
+    </div>
+
+    <!-- Visualizer Canvas -->
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl p-4 shadow-lg mb-8 relative">
+        <canvas id="visualizer" class="w-full h-32 rounded-lg"></canvas>
+        <div id="statusIndicator" class="absolute top-6 right-6 flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <div class="w-2 h-2 rounded-full bg-slate-500" id="statusDot"></div>
+            <span id="statusText">Standby</span>
+        </div>
+    </div>
+
+    <!-- Main Controls -->
+    <div class="w-full max-w-md flex flex-col items-center gap-8 mb-8">
+        <!-- Power Button -->
+        <button id="micToggleBtn" class="w-24 h-24 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-4xl text-slate-400 transition-all duration-300 hover:bg-slate-700 active:scale-95 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+            <i class="fa-solid fa-power-off"></i>
+        </button>
+
+        <!-- Mic Radius / Speaker Mode Toggle -->
+        <button id="radiusToggleBtn" class="px-6 py-3 rounded-full bg-slate-800 border border-slate-700 flex items-center gap-3 text-sm font-medium transition-colors hover:bg-slate-700 text-slate-300">
+            <i class="fa-solid fa-tower-broadcast"></i>
+            <span>Boost Mic Radius (Speaker Mode)</span>
+        </button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl p-6 shadow-lg mb-8 flex-grow">
+        
+        <!-- Input Selector -->
+        <div class="mb-6">
+            <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider"><i class="fa-solid fa-headset mr-2"></i>Select Mic</label>
+            <select id="audioInputSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                <option value="">Default Microphone</option>
+                <!-- Filled by JS -->
+            </select>
+        </div>
+
+        <hr class="border-slate-700 my-6">
+
+        <!-- Equalizer -->
+        <h3 class="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider"><i class="fa-solid fa-sliders mr-2"></i>Voice Equalizer</h3>
+        
+        <div class="space-y-5">
+            <!-- Bass -->
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Bass</span>
+                    <span id="bassVal">0 dB</span>
+                </div>
+                <input type="range" id="eqBass" min="-12" max="12" value="0" step="1">
+            </div>
+            
+            <!-- Mid -->
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Mid</span>
+                    <span id="midVal">0 dB</span>
+                </div>
+                <input type="range" id="eqMid" min="-12" max="12" value="0" step="1">
+            </div>
+
+            <!-- Treble -->
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Treble</span>
+                    <span id="trebleVal">0 dB</span>
+                </div>
+                <input type="range" id="eqTreble" min="-12" max="12" value="0" step="1">
+            </div>
+
+            <!-- Master Volume -->
+            <div class="pt-2">
+                <div class="flex justify-between text-xs text-blue-400 mb-1 font-semibold">
+                    <span>Output Volume</span>
+                    <span id="volVal">100%</span>
+                </div>
+                <input type="range" id="masterVolume" min="0" max="2" value="1" step="0.05">
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-6 mt-auto">
+        <p class="text-center text-sm font-bold tracking-widest text-slate-500">
+            CREATED BY ❤️ SHUBHANSHU
+        </p>
+    </footer>
+
+    <script>
+        // --- State Variables ---
+        let audioContext = null;
+        let micStream = null;
+        let sourceNode = null;
+        
+        // Audio Nodes
+        let gainNode = null;
+        let compressorNode = null;
+        let analyserNode = null;
+        let eqBassNode = null;
+        let eqMidNode = null;
+        let eqTrebleNode = null;
+
+        let isPlaying = false;
+        let isRadiusBoosted = false;
+        let animationId = null;
+
+        // --- DOM Elements ---
+        const micToggleBtn = document.getElementById('micToggleBtn');
+        const radiusToggleBtn = document.getElementById('radiusToggleBtn');
+        const audioInputSelect = document.getElementById('audioInputSelect');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        // Sliders
+        const eqBassSlider = document.getElementById('eqBass');
+        const eqMidSlider = document.getElementById('eqMid');
+        const eqTrebleSlider = document.getElementById('eqTreble');
+        const masterVolumeSlider = document.getElementById('masterVolume');
+
+        // Setup Canvas Size
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- Device Enumeration ---
+        async function getMicrophones() {
+            try {
+                // Request initial permission to get device labels
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+                
+                audioInputSelect.innerHTML = '';
+                audioInputs.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Microphone ${audioInputSelect.length + 1}`;
+                    audioInputSelect.appendChild(option);
+                });
+            } catch (err) {
+                console.warn("Could not enumerate devices:", err);
+            }
+        }
+        
+        // --- Audio Pipeline Setup ---
+        async function startAudio() {
+            try {
+                // 1. Initialize Audio Context
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                // 2. Get User Media Stream
+                const deviceId = audioInputSelect.value;
+                const constraints = {
+                    audio: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined,
+                        echoCancellation: !isRadiusBoosted, // Turn off echo cancellation in boost mode to catch more room sound
+                        noiseSuppression: !isRadiusBoosted,
+                        autoGainControl: true
+                    }
+                };
+
+                micStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // 3. Create Nodes
+                sourceNode = audioContext.createMediaStreamSource(micStream);
+                
+                // Analyser for visualizer
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 256;
+                
+                // Equalizer Nodes (Biquad Filters)
+                eqBassNode = audioContext.createBiquadFilter();
+                eqBassNode.type = 'lowshelf';
+                eqBassNode.frequency.value = 320;
+                eqBassNode.gain.value = eqBassSlider.value;
+
+                eqMidNode = audioContext.createBiquadFilter();
+                eqMidNode.type = 'peaking';
+                eqMidNode.frequency.value = 1000;
+                eqMidNode.Q.value = 0.5;
+                eqMidNode.gain.value = eqMidSlider.value;
+
+                eqTrebleNode = audioContext.createBiquadFilter();
+                eqTrebleNode.type = 'highshelf';
+                eqTrebleNode.frequency.value = 3200;
+                eqTrebleNode.gain.value = eqTrebleSlider.value;
+
+                // Compressor (Helps prevent clipping and can boost quiet sounds for "radius" effect)
+                compressorNode = audioContext.createDynamicsCompressor();
+                updateCompressor();
+
+                // Master Gain (Volume)
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = masterVolumeSlider.value;
+
+                // 4. Connect Pipeline: 
+                // Source -> Analyser -> Bass -> Mid -> Treble -> Compressor -> Gain -> Destination(Speaker)
+                sourceNode.connect(analyserNode);
+                analyserNode.connect(eqBassNode);
+                eqBassNode.connect(eqMidNode);
+                eqMidNode.connect(eqTrebleNode);
+                eqTrebleNode.connect(compressorNode);
+                compressorNode.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // 5. Update UI
+                isPlaying = true;
+                updateUIPowerState();
+                drawVisualizer();
+
+            } catch (err) {
+                alert("Microphone access denied or error occurred: " + err.message);
+                console.error(err);
+            }
+        }
+
+        function stopAudio() {
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+            }
+            if (sourceNode) sourceNode.disconnect();
+            if (audioContext && audioContext.state !== 'closed') {
+                // We keep audio context alive but disconnect everything
+            }
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            isPlaying = false;
+            updateUIPowerState();
+            
+            // Clear canvas
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- Radius/Boost Logic ---
+        function updateCompressor() {
+            if (!compressorNode) return;
+            if (isRadiusBoosted) {
+                // Speakerphone mode: Catch quiet sounds from far away
+                compressorNode.threshold.value = -50; 
+                compressorNode.knee.value = 40;
+                compressorNode.ratio.value = 12;
+                compressorNode.attack.value = 0;
+                compressorNode.release.value = 0.25;
+            } else {
+                // Normal mode: Standard speech
+                compressorNode.threshold.value = -24;
+                compressorNode.knee.value = 30;
+                compressorNode.ratio.value = 12;
+                compressorNode.attack.value = 0.003;
+                compressorNode.release.value = 0.25;
+            }
+        }
+
+        // --- Visualizer ---
+        function drawVisualizer() {
+            if (!isPlaying) return;
+            
+            animationId = requestAnimationFrame(drawVisualizer);
+            
+            const bufferLength = analyserNode.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyserNode.getByteFrequencyData(dataArray);
+            
+            canvasCtx.fillStyle = '#1e293b'; // slate-800
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 2;
+                
+                // Gradient color based on height
+                const r = barHeight + (25 * (i/bufferLength));
+                const g = 130 * (i/bufferLength);
+                const b = 250;
+                
+                canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                
+                x += barWidth + 1;
+            }
+        }
+
+        // --- UI Updates ---
+        function updateUIPowerState() {
+            if (isPlaying) {
+                micToggleBtn.classList.remove('text-slate-400', 'border-slate-700');
+                micToggleBtn.classList.add('text-red-500', 'border-red-500/50', 'mic-btn-active');
+                statusDot.classList.replace('bg-slate-500', 'bg-green-500');
+                statusText.innerText = "Live Transmitting";
+                statusText.classList.replace('text-slate-400', 'text-green-400');
+                audioInputSelect.disabled = true; // Lock input while playing
+            } else {
+                micToggleBtn.classList.remove('text-red-500', 'border-red-500/50', 'mic-btn-active');
+                micToggleBtn.classList.add('text-slate-400', 'border-slate-700');
+                statusDot.classList.replace('bg-green-500', 'bg-slate-500');
+                statusText.innerText = "Standby";
+                statusText.classList.replace('text-green-400', 'text-slate-400');
+                audioInputSelect.disabled = false;
+            }
+        }
+
+        // --- Event Listeners ---
+        micToggleBtn.addEventListener('click', () => {
+            if (isPlaying) stopAudio();
+            else startAudio();
+        });
+
+        radiusToggleBtn.addEventListener('click', () => {
+            isRadiusBoosted = !isRadiusBoosted;
+            
+            if (isRadiusBoosted) {
+                radiusToggleBtn.classList.remove('bg-slate-800', 'text-slate-300');
+                radiusToggleBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-500');
+            } else {
+                radiusToggleBtn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
+                radiusToggleBtn.classList.add('bg-slate-800', 'text-slate-300');
+            }
+
+            // If audio is currently playing, we need to restart it to apply the new constraints (echo cancellation changes)
+            if (isPlaying) {
+                updateCompressor();
+                // To truly toggle constraints like EchoCancellation, we have to re-request UserMedia
+                stopAudio();
+                setTimeout(startAudio, 100); 
+            }
+        });
+
+        // EQ Listeners
+        eqBassSlider.addEventListener('input', (e) => {
+            document.getElementById('bassVal').innerText = `${e.target.value} dB`;
+            if (eqBassNode) eqBassNode.gain.value = e.target.value;
+        });
+        
+        eqMidSlider.addEventListener('input', (e) => {
+            document.getElementById('midVal').innerText = `${e.target.value} dB`;
+            if (eqMidNode) eqMidNode.gain.value = e.target.value;
+        });
+        
+        eqTrebleSlider.addEventListener('input', (e) => {
+            document.getElementById('trebleVal').innerText = `${e.target.value} dB`;
+            if (eqTrebleNode) eqTrebleNode.gain.value = e.target.value;
+        });
+
+        masterVolumeSlider.addEventListener('input', (e) => {
+            const percentage = Math.round((e.target.value / 2) * 100);
+            document.getElementById('volVal').innerText = `${percentage}%`;
+            if (gainNode) gainNode.gain.value = e.target.value;
+        });
+
+        // Init device list on load
+        window.addEventListener('load', getMicrophones);
+
+    </script>
+</body>
+</html>
