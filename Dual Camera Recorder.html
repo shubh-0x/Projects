@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dual Cam PiP Recorder & 20x Zoom</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons CDN -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      background-color: #030712;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Glassmorphism styling */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .glass-btn {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .glass-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* Zoom slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      height: 6px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+      cursor: pointer;
+      border: 2px solid white;
+    }
+
+    /* Pulse animation for record */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .recording-pulse {
+      animation: pulse-ring 1.8s infinite ease-in-out;
+    }
+
+    /* Touch PiP transitions */
+    #pip-container {
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between text-white relative">
+
+  <!-- Main Video Viewport Canvas (Composited back + 20x zoom + front overlay + indicators) -->
+  <div id="canvas-container" class="absolute inset-0 z-0 bg-black overflow-hidden flex items-center justify-center">
+    <canvas id="view-canvas" class="w-full h-full object-cover"></canvas>
+  </div>
+
+  <!-- Offscreen hidden video elements for camera streams -->
+  <video id="back-video" autoplay playsinline muted class="hidden"></video>
+  <video id="front-video" autoplay playsinline muted class="hidden"></video>
+
+  <!-- Interactive draggable & resizable PiP Selfie element in UI -->
+  <div id="pip-container" class="absolute z-20 cursor-grab active:cursor-grabbing rounded-2xl overflow-hidden shadow-2xl border-2 border-white/30 backdrop-blur-md bg-slate-900/80 transition-all select-none"
+       style="width: 140px; height: 190px; right: 20px; top: 76px;">
+    <!-- PiP Live Mirror Preview -->
+    <div class="relative w-full h-full group">
+      <canvas id="pip-preview-canvas" class="w-full h-full object-cover"></canvas>
+
+      <!-- PiP Overlay Status Tag -->
+      <div class="absolute top-2 left-2 flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide border border-white/10 pointer-events-none">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="pip-tag-text">FRONT (PiP)</span>
+      </div>
+
+      <!-- Drag Handle Icon overlay -->
+      <div class="absolute top-2 right-2 text-white/70 bg-black/50 p-1 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+        <i class="ph ph-arrows-out-cardinal text-xs"></i>
+      </div>
+
+      <!-- Corner Resize Grip -->
+      <div id="pip-resize-handle" class="absolute bottom-0 right-0 w-6 h-6 flex items-end justify-end p-1 text-white/50 hover:text-white cursor-se-resize">
+        <svg viewBox="0 0 10 10" class="w-3.5 h-3.5 fill-current">
+          <path d="M8 2 L10 2 L10 10 L2 10 L2 8 L8 8 Z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP BAR: Status, Timer, Quick Actions -->
+  <header class="relative z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+    <!-- Camera Status Badges -->
+    <div class="flex items-center gap-2">
+      <div id="status-badge-back" class="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span class="text-slate-300">Back: <b class="text-white font-semibold" id="back-status">Init...</b></span>
+      </div>
+
+      <div id="status-badge-front" class="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span class="text-slate-300">Selfie: <b class="text-white font-semibold" id="front-status">Init...</b></span>
+      </div>
+    </div>
+
+    <!-- Recording Timer Indicator -->
+    <div id="rec-indicator" class="hidden glass-panel px-3.5 py-1.5 rounded-full items-center gap-2 bg-red-950/60 border-red-500/40">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500 recording-pulse"></span>
+      <span id="rec-time" class="font-mono text-xs font-bold text-red-100 tracking-wider">00:00:00</span>
+    </div>
+
+    <!-- Right Top Actions -->
+    <div class="flex items-center gap-2">
+      <button id="btn-swap-views" title="Swap Main & Selfie Cameras" class="glass-btn p-2.5 rounded-full text-lg text-white hover:text-sky-300">
+        <i class="ph ph-arrows-clockwise"></i>
+      </button>
+      <button id="btn-fullscreen" title="Toggle Fullscreen" class="glass-btn p-2.5 rounded-full text-lg text-white">
+        <i class="ph ph-corners-out"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner (Shows hardware warnings, concurrency info, etc.) -->
+  <div id="notification-bar" class="relative z-30 mx-4 px-4 py-2 text-xs rounded-xl glass-panel hidden flex items-center justify-between border-amber-500/30 text-amber-200">
+    <div class="flex items-center gap-2">
+      <i class="ph ph-warning-circle text-amber-400 text-base"></i>
+      <span id="notification-text">Dual capture notice</span>
+    </div>
+    <button id="btn-close-notify" class="text-amber-300 hover:text-white p-1">
+      <i class="ph ph-x text-sm"></i>
+    </button>
+  </div>
+
+  <!-- RIGHT FLANK: Vertical Zoom Control Slider & Badges -->
+  <aside class="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3 glass-panel px-2.5 py-4 rounded-3xl">
+    <div class="text-[11px] font-bold text-sky-400 tracking-wider">ZOOM</div>
+    
+    <!-- Quick Zoom Presets -->
+    <div class="flex flex-col gap-1.5 text-xs font-semibold">
+      <button class="zoom-preset-btn px-2 py-1 rounded-lg glass-btn text-[11px]" data-zoom="20">20x</button>
+      <button class="zoom-preset-btn px-2 py-1 rounded-lg glass-btn text-[11px]" data-zoom="10">10x</button>
+      <button class="zoom-preset-btn px-2 py-1 rounded-lg glass-btn text-[11px]" data-zoom="5">5x</button>
+      <button class="zoom-preset-btn px-2 py-1 rounded-lg glass-btn text-[11px]" data-zoom="2">2x</button>
+      <button class="zoom-preset-btn px-2 py-1 rounded-lg glass-btn text-[11px] bg-sky-500/30 text-sky-300 border-sky-400/50" data-zoom="1">1x</button>
+    </div>
+
+    <!-- Vertical Zoom Slider Track (Rotated range) -->
+    <div class="h-44 flex items-center justify-center my-1">
+      <input type="range" id="zoom-slider" min="1" max="20" step="0.1" value="1" 
+             class="w-40 -rotate-90 origin-center cursor-pointer">
+    </div>
+
+    <!-- Exact Zoom Readout -->
+    <div class="bg-black/50 px-2 py-1 rounded-md text-xs font-mono font-bold text-white border border-white/10" id="zoom-display">
+      1.0x
+    </div>
+  </aside>
+
+  <!-- BOTTOM BAR: Recording Controls, Mic Toggle, PiP Corner Preset -->
+  <footer class="relative z-30 pb-6 pt-3 px-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col items-center gap-3">
+    
+    <!-- PiP Positioning Shortcut Chips -->
+    <div class="flex items-center gap-2 text-xs">
+      <span class="text-slate-400 text-[11px] font-medium mr-1">PiP Position:</span>
+      <button class="pip-pos-btn glass-btn px-2.5 py-1 rounded-full text-[11px]" data-pos="top-left">Top-L</button>
+      <button class="pip-pos-btn glass-btn px-2.5 py-1 rounded-full text-[11px] bg-white/20" data-pos="top-right">Top-R</button>
+      <button class="pip-pos-btn glass-btn px-2.5 py-1 rounded-full text-[11px]" data-pos="bottom-left">Btm-L</button>
+      <button class="pip-pos-btn glass-btn px-2.5 py-1 rounded-full text-[11px]" data-pos="bottom-right">Btm-R</button>
+    </div>
+
+    <!-- Main Action Buttons Row -->
+    <div class="w-full max-w-md flex items-center justify-around mt-2">
+      
+      <!-- Audio/Mic Toggle Button -->
+      <button id="btn-toggle-mic" class="glass-btn p-3.5 rounded-full text-white text-xl" title="Toggle Microphone">
+        <i class="ph ph-microphone"></i>
+      </button>
+
+      <!-- Center Big Shutter/Record Button -->
+      <div class="relative flex items-center justify-center">
+        <div id="record-ring" class="absolute w-20 h-20 rounded-full border-2 border-white/30 transition-all pointer-events-none"></div>
+        <button id="btn-record" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-90 flex items-center justify-center shadow-lg shadow-red-600/50 transition-all border-4 border-black/40">
+          <div id="record-icon" class="w-6 h-6 rounded-full bg-white transition-all"></div>
+        </button>
+      </div>
+
+      <!-- Pause / Resume Recording Button -->
+      <button id="btn-pause-rec" disabled class="glass-btn p-3.5 rounded-full text-white text-xl opacity-40 cursor-not-allowed" title="Pause Recording">
+        <i class="ph ph-pause"></i>
+      </button>
+
+    </div>
+  </footer>
+
+  <!-- RECORDED VIDEO PREVIEW MODAL -->
+  <div id="preview-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
+        <div class="flex items-center gap-2">
+          <i class="ph ph-film-strip text-sky-400 text-lg"></i>
+          <h3 class="font-semibold text-sm">Dual Camera Recording Preview</h3>
+        </div>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Video Player Viewport -->
+      <div class="relative bg-black flex items-center justify-center aspect-video max-h-[60vh] w-full">
+        <video id="playback-video" controls class="w-full h-full object-contain"></video>
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="px-5 py-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div class="text-xs text-slate-400" id="recorded-file-info">
+          Format: WebM / MP4 (Composited 1080p)
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="btn-discard-video" class="glass-btn px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-red-400">
+            Discard
+          </button>
+          <a id="btn-download-video" download="dual-camera-capture.webm" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-sky-500/25">
+            <i class="ph ph-download-simple font-bold"></i>
+            Download Video
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * DUAL CAMERA PICTURE-IN-PICTURE & 20X ZOOM ENGINE
+     * Captures Environment (Back) & User (Selfie) concurrent video tracks,
+     * performs canvas compositing with software/hardware hybrid 20x zoom,
+     * and records via MediaRecorder stream.
+     */
+
+    // State Variables
+    let backStream = null;
+    let frontStream = null;
+    let audioStream = null;
+    let isMicEnabled = true;
+
+    let backTrack = null;
+    let frontTrack = null;
+
+    let isSwapped = false; // If true, front is background and back is PiP
+    let currentZoom = 1.0;
+    const MAX_ZOOM = 20.0;
+    const MIN_ZOOM = 1.0;
+
+    // Recording State
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let isPaused = false;
+    let recordStartTime = 0;
+    let recordTimerInterval = null;
+    let recordedBlobUrl = null;
+
+    // DOM Elements
+    const backVideo = document.getElementById('back-video');
+    const frontVideo = document.getElementById('front-video');
+    const viewCanvas = document.getElementById('view-canvas');
+    const viewCtx = viewCanvas.getContext('2d', { alpha: false });
+    const pipCanvas = document.getElementById('pip-preview-canvas');
+    const pipCtx = pipCanvas.getContext('2d');
+
+    const pipContainer = document.getElementById('pip-container');
+    const pipResizeHandle = document.getElementById('pip-resize-handle');
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomDisplay = document.getElementById('zoom-display');
+
+    const backStatusEl = document.getElementById('back-status');
+    const frontStatusEl = document.getElementById('front-status');
+    const notificationBar = document.getElementById('notification-bar');
+    const notificationText = document.getElementById('notification-text');
+
+    const btnRecord = document.getElementById('btn-record');
+    const recordIcon = document.getElementById('record-icon');
+    const recordRing = document.getElementById('record-ring');
+    const btnPauseRec = document.getElementById('btn-pause-rec');
+    const recIndicator = document.getElementById('rec-indicator');
+    const recTime = document.getElementById('rec-time');
+
+    const btnToggleMic = document.getElementById('btn-toggle-mic');
+    const btnSwapViews = document.getElementById('btn-swap-views');
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+
+    const previewModal = document.getElementById('preview-modal');
+    const playbackVideo = document.getElementById('playback-video');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnDiscardVideo = document.getElementById('btn-discard-video');
+    const btnDownloadVideo = document.getElementById('btn-download-video');
+    const recordedFileInfo = document.getElementById('recorded-file-info');
+
+    // PiP Geometry state relative to viewport
+    let pipState = {
+      x: window.innerWidth - 160,
+      y: 76,
+      width: 140,
+      height: 190,
+      isDragging: false,
+      isResizing: false,
+      dragOffsetX: 0,
+      dragOffsetY: 0
+    };
+
+    /**
+     * Display a temporary notification banner
+     */
+    function showNotification(msg, duration = 6000) {
+      notificationText.textContent = msg;
+      notificationBar.classList.remove('hidden');
+      if (duration > 0) {
+        setTimeout(() => {
+          notificationBar.classList.add('hidden');
+        }, duration);
+      }
+    }
+    document.getElementById('btn-close-notify').onclick = () => notificationBar.classList.add('hidden');
+
+    /**
+     * Resize canvases to match render resolutions
+     */
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      // Ensure 1080p standard recording capability
+      viewCanvas.width = 1920;
+      viewCanvas.height = 1080;
+
+      pipCanvas.width = pipContainer.clientWidth * dpr;
+      pipCanvas.height = pipContainer.clientHeight * dpr;
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    /**
+     * Initialize camera streams
+     * Attempts concurrent environment + user streams.
+     * Falls back smoothly if simultaneous dual streams aren't supported by hardware.
+     */
+    async function initializeCameras() {
+      try {
+        // First get audio permissions
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        } catch (aErr) {
+          console.warn("Microphone permission denied or not available", aErr);
+          isMicEnabled = false;
+          btnToggleMic.classList.add('text-red-400');
+          btnToggleMic.innerHTML = '<i class="ph ph-microphone-slash"></i>';
+        }
+
+        // List video input devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        console.log("Detected video devices:", videoDevices);
+
+        // Attempt 1: Request Back (environment) camera
+        try {
+          backStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            }
+          });
+          backVideo.srcObject = backStream;
+          backTrack = backStream.getVideoTracks()[0];
+          backStatusEl.textContent = 'Active (HD)';
+          backStatusEl.parentElement.previousElementSibling.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        } catch (bErr) {
+          console.warn("Back camera direct error, trying generic video:", bErr);
+          backStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          backVideo.srcObject = backStream;
+          backTrack = backStream.getVideoTracks()[0];
+          backStatusEl.textContent = 'Active (Standard)';
+        }
+
+        // Attempt 2: Request Front (user) camera concurrently
+        try {
+          frontStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'user' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+          frontVideo.srcObject = frontStream;
+          frontTrack = frontStream.getVideoTracks()[0];
+          frontStatusEl.textContent = 'Active';
+          frontStatusEl.parentElement.previousElementSibling.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        } catch (fErr) {
+          console.warn("Could not start concurrent front camera:", fErr);
+          frontStatusEl.textContent = 'Hardware Busy';
+          frontStatusEl.parentElement.previousElementSibling.className = 'w-2 h-2 rounded-full bg-amber-400';
+          
+          showNotification(
+            "Hardware note: Your device or browser restricted opening both cameras simultaneously. Running back camera in high-def with digital 20x zoom.",
+            9000
+          );
+        }
+
+        resizeCanvases();
+        checkHardwareZoomSupport();
+        requestAnimationFrame(renderLoop);
+
+      } catch (err) {
+        console.error("Camera access error:", err);
+        showNotification("Failed to access camera: " + err.message, 10000);
+        backStatusEl.textContent = 'Blocked';
+        frontStatusEl.textContent = 'Blocked';
+      }
+    }
+
+    /**
+     * Check if back camera track has hardware optical/digital zoom capabilities
+     */
+    async function checkHardwareZoomSupport() {
+      if (!backTrack) return;
+      try {
+        const capabilities = backTrack.getCapabilities ? backTrack.getCapabilities() : {};
+        if (capabilities.zoom) {
+          console.log("Hardware zoom supported range:", capabilities.zoom.min, "to", capabilities.zoom.max);
+        }
+      } catch (e) {
+        console.log("Track getCapabilities error:", e);
+      }
+    }
+
+    /**
+     * Apply Zoom (Hybrid: apply hardware zoom if available, combined with Canvas 20x digital zoom)
+     */
+    async function setZoom(val) {
+      currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parseFloat(val)));
+      zoomSlider.value = currentZoom;
+      zoomDisplay.textContent = currentZoom.toFixed(1) + 'x';
+
+      // Update preset buttons styles
+      document.querySelectorAll('.zoom-preset-btn').forEach(btn => {
+        const z = parseFloat(btn.dataset.zoom);
+        if (Math.abs(z - currentZoom) < 0.2) {
+          btn.classList.add('bg-sky-500/30', 'text-sky-300', 'border-sky-400/50');
+        } else {
+          btn.classList.remove('bg-sky-500/30', 'text-sky-300', 'border-sky-400/50');
+        }
+      });
+
+      // Attempt native track constraint zoom if possible
+      if (backTrack && backTrack.applyConstraints) {
+        try {
+          const capabilities = backTrack.getCapabilities ? backTrack.getCapabilities() : {};
+          if (capabilities.zoom) {
+            const hwTarget = Math.min(capabilities.zoom.max, Math.max(capabilities.zoom.min, currentZoom));
+            await backTrack.applyConstraints({
+              advanced: [{ zoom: hwTarget }]
+            });
+          }
+        } catch (e) {
+          // Hardware zoom constraint failed or unsupported; canvas digital zoom handles the full 20x
+        }
+      }
+    }
+
+    zoomSlider.addEventListener('input', (e) => setZoom(e.target.value));
+
+    document.querySelectorAll('.zoom-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setZoom(btn.dataset.zoom);
+      });
+    });
+
+    /**
+     * Main Canvas Composite Rendering Loop
+     * Composites:
+     * 1. Main Background video (Back camera by default, with up to 20x crop zoom)
+     * 2. Picture-in-Picture window (Selfie / Front camera)
+     * 3. Video timestamp / zoom telemetry
+     */
+    function renderLoop() {
+      const cw = viewCanvas.width;
+      const ch = viewCanvas.height;
+
+      // Clear main canvas
+      viewCtx.fillStyle = '#050505';
+      viewCtx.fillRect(0, 0, cw, ch);
+
+      const mainVideo = isSwapped ? frontVideo : backVideo;
+      const subVideo = isSwapped ? backVideo : frontVideo;
+
+      // 1. Draw Main Camera with Zoom
+      if (mainVideo && mainVideo.readyState >= 2) {
+        const vw = mainVideo.videoWidth || 1920;
+        const vh = mainVideo.videoHeight || 1080;
+
+        // Calculate zoom crop window
+        // At zoom=1, source is full video. At zoom=20, source is 1/20th center box.
+        const effectiveZoom = isSwapped ? 1.0 : currentZoom; // Zoom applies to back camera
+        const cropW = vw / effectiveZoom;
+        const cropH = vh / effectiveZoom;
+        const cropX = (vw - cropW) / 2;
+        const cropY = (vh - cropH) / 2;
+
+        viewCtx.save();
+        // If front camera is swapped to main, mirror it horizontally for natural viewing
+        if (isSwapped) {
+          viewCtx.translate(cw, 0);
+          viewCtx.scale(-1, 1);
+        }
+        viewCtx.drawImage(mainVideo, cropX, cropY, cropW, cropH, 0, 0, cw, ch);
+        viewCtx.restore();
+      } else {
+        // Fallback loading grid pattern
+        drawPlaceholder(viewCtx, cw, ch, "Initializing Primary Camera...");
+      }
+
+      // 2. Compute PiP coordinate relative to the master canvas
+      // pipState coordinates in screen pixels mapped to 1920x1080 canvas
+      const scaleX = cw / window.innerWidth;
+      const scaleY = ch / window.innerHeight;
+
+      const pipCanvasW = pipState.width * scaleX;
+      const pipCanvasH = pipState.height * scaleY;
+      const pipCanvasX = pipState.x * scaleX;
+      const pipCanvasY = pipState.y * scaleY;
+
+      // Draw PiP frame on the main canvas (so it records seamlessly)
+      viewCtx.save();
+      const cornerRadius = 16 * scaleX;
+      roundRect(viewCtx, pipCanvasX, pipCanvasY, pipCanvasW, pipCanvasH, cornerRadius);
+      viewCtx.clip();
+
+      if (subVideo && subVideo.readyState >= 2) {
+        viewCtx.save();
+        // Mirror selfie camera horizontally
+        if (!isSwapped) {
+          viewCtx.translate(pipCanvasX + pipCanvasW, pipCanvasY);
+          viewCtx.scale(-1, 1);
+          viewCtx.drawImage(subVideo, 0, 0, pipCanvasW, pipCanvasH);
+        } else {
+          viewCtx.drawImage(subVideo, pipCanvasX, pipCanvasY, pipCanvasW, pipCanvasH);
+        }
+        viewCtx.restore();
+      } else {
+        // Draw placeholder selfie simulation if second camera unavailable
+        drawPipSimulation(viewCtx, pipCanvasX, pipCanvasY, pipCanvasW, pipCanvasH);
+      }
+      viewCtx.restore();
+
+      // Border and shadow around PiP on composite canvas
+      viewCtx.save();
+      roundRect(viewCtx, pipCanvasX, pipCanvasY, pipCanvasW, pipCanvasH, cornerRadius);
+      viewCtx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      viewCtx.lineWidth = 3 * scaleX;
+      viewCtx.stroke();
+      viewCtx.restore();
+
+      // 3. Render PiP Preview canvas in DOM
+      if (pipCanvas.width > 0 && pipCanvas.height > 0) {
+        pipCtx.clearRect(0, 0, pipCanvas.width, pipCanvas.height);
+        if (subVideo && subVideo.readyState >= 2) {
+          pipCtx.save();
+          if (!isSwapped) {
+            pipCtx.translate(pipCanvas.width, 0);
+            pipCtx.scale(-1, 1);
+          }
+          pipCtx.drawImage(subVideo, 0, 0, pipCanvas.width, pipCanvas.height);
+          pipCtx.restore();
+        } else {
+          drawPipSimulation(pipCtx, 0, 0, pipCanvas.width, pipCanvas.height);
+        }
+      }
+
+      // 4. Subtle watermark telemetry on recorded video
+      viewCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      viewCtx.fillRect(24, ch - 54, 280, 34);
+      viewCtx.fillStyle = '#ffffff';
+      viewCtx.font = '600 16px "JetBrains Mono", monospace';
+      const nowStr = new Date().toLocaleTimeString();
+      viewCtx.fillText(`DUAL-REC • ${nowStr} • ${currentZoom.toFixed(1)}X`, 36, ch - 32);
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    /**
+     * Draw stylish fallback avatar if physical 2nd camera is blocked/restricted
+     */
+    function drawPipSimulation(ctx, x, y, w, h) {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + h / 2 - 14, Math.min(w, h) * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + h / 2 + 50, Math.min(w, h) * 0.4, Math.PI, 0, false);
+      ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText("Selfie View", x + w / 2, y + h - 18);
+    }
+
+    function drawPlaceholder(ctx, w, h, text) {
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 24px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, w / 2, h / 2);
+    }
+
+    // Helper to draw rounded rectangle on canvas
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    /**
+     * Draggable & Resizable PiP Handling (Touch & Mouse)
+     */
+    function setPipPosition(x, y) {
+      const maxX = window.innerWidth - pipState.width - 10;
+      const maxY = window.innerHeight - pipState.height - 80;
+      pipState.x = Math.max(10, Math.min(maxX, x));
+      pipState.y = Math.max(64, Math.min(maxY, y));
+
+      pipContainer.style.left = pipState.x + 'px';
+      pipContainer.style.top = pipState.y + 'px';
+      pipContainer.style.right = 'auto'; // clear right CSS
+    }
+
+    // Quick snap presets
+    document.querySelectorAll('.pip-pos-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.pip-pos-btn').forEach(b => b.classList.remove('bg-white/20'));
+        btn.classList.add('bg-white/20');
+        const pos = btn.dataset.pos;
+        const pad = 20;
+        const w = pipState.width;
+        const h = pipState.height;
+
+        if (pos === 'top-left') setPipPosition(pad, 76);
+        if (pos === 'top-right') setPipPosition(window.innerWidth - w - pad, 76);
+        if (pos === 'bottom-left') setPipPosition(pad, window.innerHeight - h - 140);
+        if (pos === 'bottom-right') setPipPosition(window.innerWidth - w - pad, window.innerHeight - h - 140);
+      });
+    });
+
+    // Touch & Mouse Dragging on PiP
+    function onPointerDown(e) {
+      if (e.target === pipResizeHandle || pipResizeHandle.contains(e.target)) return;
+      pipState.isDragging = true;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      pipState.dragOffsetX = clientX - pipState.x;
+      pipState.dragOffsetY = clientY - pipState.y;
+    }
+
+    function onPointerMove(e) {
+      if (pipState.isDragging) {
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        setPipPosition(clientX - pipState.dragOffsetX, clientY - pipState.dragOffsetY);
+      } else if (pipState.isResizing) {
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const newW = Math.max(100, Math.min(260, clientX - pipState.x));
+        const newH = newW * 1.35; // keep mobile aspect ratio
+        pipState.width = newW;
+        pipState.height = newH;
+        pipContainer.style.width = newW + 'px';
+        pipContainer.style.height = newH + 'px';
+        resizeCanvases();
+      }
+    }
+
+    function onPointerUp() {
+      pipState.isDragging = false;
+      pipState.isResizing = false;
+    }
+
+    pipContainer.addEventListener('mousedown', onPointerDown);
+    pipContainer.addEventListener('touchstart', onPointerDown, { passive: true });
+
+    pipResizeHandle.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      pipState.isResizing = true;
+    });
+    pipResizeHandle.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      pipState.isResizing = true;
+    }, { passive: true });
+
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchend', onPointerUp);
+
+    // Initial position setup for PiP container
+    setPipPosition(window.innerWidth - 160, 76);
+
+    /**
+     * Swap Main & PiP Cameras
+     */
+    btnSwapViews.addEventListener('click', () => {
+      isSwapped = !isSwapped;
+      document.getElementById('pip-tag-text').textContent = isSwapped ? 'BACK' : 'FRONT (PiP)';
+      btnSwapViews.classList.add('rotate-180');
+      setTimeout(() => btnSwapViews.classList.remove('rotate-180'), 300);
+    });
+
+    /**
+     * Fullscreen toggle
+     */
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    /**
+     * Audio Mute Toggle
+     */
+    btnToggleMic.addEventListener('click', () => {
+      isMicEnabled = !isMicEnabled;
+      if (audioStream) {
+        audioStream.getAudioTracks().forEach(track => track.enabled = isMicEnabled);
+      }
+      if (isMicEnabled) {
+        btnToggleMic.classList.remove('text-red-400');
+        btnToggleMic.innerHTML = '<i class="ph ph-microphone"></i>';
+      } else {
+        btnToggleMic.classList.add('text-red-400');
+        btnToggleMic.innerHTML = '<i class="ph ph-microphone-slash"></i>';
+      }
+    });
+
+    /**
+     * Video Recording Logic via Canvas captureStream
+     */
+    function getCombinedStream() {
+      // Capture 30fps stream from composite canvas
+      const canvasStream = viewCanvas.captureStream(30);
+
+      // Add audio track if available and enabled
+      if (audioStream && isMicEnabled) {
+        const audioTracks = audioStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          canvasStream.addTrack(audioTracks[0]);
+        }
+      }
+      return canvasStream;
+    }
+
+    function startRecording() {
+      recordedChunks = [];
+      const stream = getCombinedStream();
+
+      // Determine supported mimeType
+      let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: 'video/webm;codecs=vp8,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: 'video/webm' };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/mp4' };
+          }
+        }
+      }
+
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (e) {
+        mediaRecorder = new MediaRecorder(stream);
+      }
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = handleRecordingStopped;
+
+      mediaRecorder.start(200); // 200ms slice
+      isRecording = true;
+      isPaused = false;
+      recordStartTime = Date.now();
+
+      // UI Updates
+      recordIcon.className = 'w-5 h-5 rounded-sm bg-red-500';
+      recordRing.classList.add('scale-125', 'border-red-500');
+      btnPauseRec.disabled = false;
+      btnPauseRec.classList.remove('opacity-40', 'cursor-not-allowed');
+      recIndicator.classList.remove('hidden');
+      recIndicator.classList.add('flex');
+
+      recordTimerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function pauseRecording() {
+      if (!mediaRecorder || !isRecording) return;
+      if (!isPaused) {
+        mediaRecorder.pause();
+        isPaused = true;
+        btnPauseRec.innerHTML = '<i class="ph ph-play"></i>';
+        recTime.classList.add('opacity-50');
+      } else {
+        mediaRecorder.resume();
+        isPaused = false;
+        btnPauseRec.innerHTML = '<i class="ph ph-pause"></i>';
+        recTime.classList.remove('opacity-50');
+      }
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder || !isRecording) return;
+      mediaRecorder.stop();
+      isRecording = false;
+      isPaused = false;
+      clearInterval(recordTimerInterval);
+
+      // UI Reset
+      recordIcon.className = 'w-6 h-6 rounded-full bg-white';
+      recordRing.classList.remove('scale-125', 'border-red-500');
+      btnPauseRec.disabled = true;
+      btnPauseRec.classList.add('opacity-40', 'cursor-not-allowed');
+      btnPauseRec.innerHTML = '<i class="ph ph-pause"></i>';
+      recIndicator.classList.add('hidden');
+      recIndicator.classList.remove('flex');
+      recTime.textContent = '00:00:00';
+    }
+
+    function updateTimerDisplay() {
+      if (isPaused) return;
+      const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+      const hrs = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
+      recTime.textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    function handleRecordingStopped() {
+      const mime = mediaRecorder.mimeType || 'video/webm';
+      const blob = new Blob(recordedChunks, { type: mime });
+      recordedBlobUrl = URL.createObjectURL(blob);
+
+      playbackVideo.src = recordedBlobUrl;
+      btnDownloadVideo.href = recordedBlobUrl;
+      const extension = mime.includes('mp4') ? 'mp4' : 'webm';
+      btnDownloadVideo.download = `dual-cam-${Date.now()}.${extension}`;
+
+      const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+      recordedFileInfo.textContent = `Size: ${sizeMB} MB • Format: ${extension.toUpperCase()} (Composited PiP)`;
+
+      previewModal.classList.remove('hidden');
+      playbackVideo.play().catch(() => {});
+    }
+
+    btnRecord.addEventListener('click', () => {
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    });
+
+    btnPauseRec.addEventListener('click', pauseRecording);
+
+    // Modal Actions
+    btnCloseModal.addEventListener('click', () => {
+      previewModal.classList.add('hidden');
+      playbackVideo.pause();
+    });
+
+    btnDiscardVideo.addEventListener('click', () => {
+      if (recordedBlobUrl) {
+        URL.revokeObjectURL(recordedBlobUrl);
+      }
+      previewModal.classList.add('hidden');
+      playbackVideo.pause();
+    });
+
+    // Initialize application when loaded
+    window.addEventListener('load', () => {
+      initializeCameras();
+    });
+  </script>
+</body>
+</html>
